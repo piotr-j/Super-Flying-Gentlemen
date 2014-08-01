@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="purchase_restored">Zakupy przywrócone</string>
+    <string name="restart_required">Zrestartuj aplikacje aby zastosować zmiany</string>
+    <string name="get_premium_banner">Kup premium aby usunąć reklamy!</string>
+</resources>

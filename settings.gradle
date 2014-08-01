@@ -1,0 +1,2 @@
+include ':html'
+include "core", "desktop", "android"

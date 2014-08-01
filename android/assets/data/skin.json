@@ -1,0 +1,58 @@
+{
+com.badlogic.gdx.graphics.g2d.BitmapFont: { 
+    default-font: { file: roboto.fnt },
+    large-font: { file: roboto_large.fnt }
+},
+com.badlogic.gdx.graphics.Color: {
+	green: { a: 1, b: 0, g: 1, r: 0 },
+	toxic: { a: 1, b: 0.14, g: 1, r: 0.7 },
+	white: { a: 1, b: 1, g: 1, r: 1 },
+	red: { a: 1, b: 0, g: 0, r: 1 },
+	premium: { a: 1, b:0, g: 0.84, r: 1 },
+	premium_down: { a: 1, b: 0, g: 0.57, r: 0.86 },
+	black: { a: 1, b: 0, g: 0, r: 0 }
+},
+com.badlogic.gdx.scenes.scene2d.ui.Skin$TintedDrawable: {
+	dialogDim: { name: white, color: { r: 0, g: 0, b: 0, a: 0.45 } }
+},
+com.badlogic.gdx.scenes.scene2d.ui.Button$ButtonStyle: {
+	default: { down: button_down, up: button},
+	toggle: { down: button_down, checked: button_down, up: button },
+    small: { down: button_small_down, checked: button_small_down, up: button_small },
+    sound: { down: sound_down, checked: sound_off, up: sound_on },
+    about: { down: about_down, up: about },
+    music: { down: music_down, checked: music_off, up: music_on },
+    settings: { down: settings_down, up: settings }
+},
+com.badlogic.gdx.scenes.scene2d.ui.TextButton$TextButtonStyle: {
+	default: { down: button_down, up: button, font: default-font, fontColor: white , downFontColor: toxic },
+	default-large: { down: button_down, up: button, font: large-font, fontColor: white, downFontColor: toxic },
+	premium: { down: button_down, up: button, font: default-font, fontColor: premium , downFontColor: premium_down },
+	small: { down: button_small_down, up: button_small, font: default-font, fontColor: white, downFontColor: toxic},
+	gplus: { down: g_plus_down, up: g_plus_up, font: default-font, fontColor: white , downFontColor: toxic },
+	toggle: { down: button_down, up: button, checked: button_down, font: default-font, fontColor: white, downFontColor: toxic },
+	toggle-small: { down: button_small_down, up: button_small, checked: button_small_down, font: default-font, fontColor: white, downFontColor: toxic }
+},
+com.badlogic.gdx.scenes.scene2d.ui.ImageTextButton$ImageTextButtonStyle: {
+	default: { down: button_down, up: button, font: default-font, fontColor: white, downFontColor: toxic },
+	small: { down: button_small_down, up: button_small, font: default-font, fontColor: white, downFontColor: toxic },
+},
+com.badlogic.gdx.scenes.scene2d.ui.Window$WindowStyle: {
+	default: { titleFont: default-font, background: window, titleFontColor: white },
+	dialog: { titleFont: default-font, background: window, titleFontColor: white, stageBackground: dialogDim }
+},
+com.badlogic.gdx.scenes.scene2d.ui.ProgressBar$ProgressBarStyle: {
+	default-horizontal: { background: slider, knob: knob }
+},
+com.badlogic.gdx.scenes.scene2d.ui.Slider$SliderStyle: {
+	default-horizontal: { background: slider, knob: knob }
+},
+com.badlogic.gdx.scenes.scene2d.ui.Label$LabelStyle: {
+	default: { font: default-font, fontColor: white },
+	toxic: { font: default-font, fontColor: toxic },
+	default-large: { font: large-font, fontColor: white }
+},
+com.badlogic.gdx.scenes.scene2d.ui.ScrollPane$ScrollPaneStyle: {
+    default: {}
+}
+}

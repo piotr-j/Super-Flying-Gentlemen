@@ -1,0 +1,55 @@
+
+sfg_particles.png
+size: 254,116
+format: RGBA8888
+filter: Nearest,Nearest
+repeat: none
+blood_large
+  rotate: false
+  xy: 2, 37
+  size: 90, 79
+  orig: 90, 79
+  offset: 0, 0
+  index: -1
+blood_medium
+  rotate: false
+  xy: 2, 2
+  size: 33, 33
+  orig: 33, 33
+  offset: 0, 0
+  index: -1
+blood_single
+  rotate: false
+  xy: 94, 45
+  size: 7, 7
+  orig: 7, 7
+  offset: 0, 0
+  index: -1
+blood_small
+  rotate: false
+  xy: 222, 93
+  size: 24, 23
+  orig: 24, 23
+  offset: 0, 0
+  index: -1
+exp_fire
+  rotate: false
+  xy: 94, 54
+  size: 62, 62
+  orig: 62, 62
+  offset: 0, 0
+  index: -1
+exp_particle
+  rotate: false
+  xy: 248, 112
+  size: 6, 4
+  orig: 6, 4
+  offset: 0, 0
+  index: -1
+exp_smoke
+  rotate: false
+  xy: 158, 54
+  size: 62, 62
+  orig: 62, 62
+  offset: 0, 0
+  index: -1

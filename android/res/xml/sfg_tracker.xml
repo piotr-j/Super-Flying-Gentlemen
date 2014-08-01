@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer name="ga_sessionTimeout">300</integer>
+
+    <!--<integer name="ga_dispatchPeriod">1800</integer>-->
+    <integer name="ga_dispatchPeriod">30</integer>
+
+    <!-- Enable automatic Activity measurement -->
+    <bool name="ga_autoActivityTracking">false</bool>
+    <bool name="ga_anonymizeIp">true</bool>
+    <bool name="ga_reportUncaughtExceptions">true</bool>
+
+    <!--  The following value should be replaced with correct property id. -->
+    <string name="ga_trackingId">UA-49968515-2</string>
+</resources>

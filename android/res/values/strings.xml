@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">Super Flying Gentleman</string>
+    <!-- uncomment this and insert your data -->
+    <!--<string name="app_id">123456789012</string>-->
+    <!--<string name="ad_unit_id">123456789012</string>-->
+    <!--<string name="crittercism_id">123456789012</string>-->
+    <!--<string name="leaderboard_brutal_id">123456789012</string>-->
+    <!--<string name="leaderboard_very_hard_id">123456789012</string>-->
+    <!--<string name="leaderboard_hard_id">123456789012</string>-->
+    <!--<string name="leaderboard_baby_id">123456789012</string> -->
+    <!--<string name="achiev_you_died_id">123456789012</string>-->
+    <!--<string name="achiev_bronze_hat_id">123456789012</string>-->
+    <!--<string name="achiev_silver_hat_id">123456789012</string>-->
+    <!--<string name="achiev_gold_hat_id">123456789012</string>-->
+    <!--<string name="achiev_diamond_hat_id">123456789012</string>-->
+    <!--<string name="achiev_spiked_id">123456789012</string>-->
+    <!--<string name="achiev_crushed_id">123456789012</string>-->
+    <string name="purchase_restored">Purchases restored</string>
+    <string name="restart_required">Restart the app for changes to take effect</string>
+    <string name="get_premium_banner">Get premium to remove ads!</string>
+</resources>
