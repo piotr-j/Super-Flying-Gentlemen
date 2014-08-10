@@ -16,13 +16,33 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.piotrjastrzebski.sfg.game.tutorials;
+package io.piotrjastrzebski.sfg.game.objects.obstacles.endpoints;
 
-import io.piotrjastrzebski.sfg.utils.Assets;
+import com.badlogic.gdx.graphics.g2d.Batch;
+import com.esotericsoftware.spine.SkeletonRenderer;
 
-public class Jump extends Tutorial {
-    public Jump(Assets assets) {
-        super(assets.getSkeletonData(Assets.Animations.TUT_JUMP),
-                assets.getAnimationStateData(Assets.Animations.TUT_JUMP));
+public class NullEndPoint extends EndPoint {
+    public NullEndPoint() {
+        super();
+    }
+
+    @Override
+    public void init(float x, float y, boolean up) {
+        // do nothing
+    }
+
+    @Override
+    public void reset() {
+        // do nothing
+    }
+
+    @Override
+    public void draw(Batch batch, SkeletonRenderer skeletonRenderer){
+        // do nothing
+    }
+
+    @Override
+    public void execute(boolean bloodied){
+        // do nothing
     }
 }

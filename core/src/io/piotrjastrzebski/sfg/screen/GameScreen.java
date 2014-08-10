@@ -22,14 +22,19 @@ import box2dLight.RayHandler;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Camera;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.utils.Pools;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.esotericsoftware.spine.SkeletonRenderer;
 
@@ -42,6 +47,7 @@ import io.piotrjastrzebski.sfg.game.ContactDispatcher;
 import io.piotrjastrzebski.sfg.game.PlayerStats;
 import io.piotrjastrzebski.sfg.game.SFGGame;
 import io.piotrjastrzebski.sfg.game.objects.Background;
+import io.piotrjastrzebski.sfg.game.objects.obstacles.Obstacle;
 import io.piotrjastrzebski.sfg.game.tutorials.Boost;
 import io.piotrjastrzebski.sfg.game.tutorials.Jump;
 import io.piotrjastrzebski.sfg.screen.inputhandlers.GameInputHandler;
@@ -68,7 +74,11 @@ public class GameScreen extends DefaultScreen implements EventListener {
 	public static final float PLAYER_OFFSET = VIEWPORT_WIDTH/4;
     private GameState state = GameState.RUNNING;
     private Label scoreLabel;
+    private Table scoreContainer;
     private Label livesLabel;
+    private Table livesContainer;
+    private Label shieldsLabel;
+    private Table shieldsContainer;
     private OrthographicCamera gameCamera;
 
     private final EventLoop eventLoop;
@@ -103,6 +113,13 @@ public class GameScreen extends DefaultScreen implements EventListener {
     private Jump jumpTut;
     private Boost boostTut;
 
+    private Color toxicColor;
+    private Color redColor;
+    private Color whiteColor;
+
+    private int lastLives;
+    private int lastShields;
+
 	public GameScreen(Difficulty difficulty) {
 		super();
         Gdx.input.setInputProcessor(new GameInputHandler(this).getIM());
@@ -124,6 +141,7 @@ public class GameScreen extends DefaultScreen implements EventListener {
         eventLoop.register(this, EventType.PLAYER_LIVES_CHANGED);
         eventLoop.register(this, EventType.PLAYER_BOOST_CHANGED);
         eventLoop.register(this, EventType.PLAYER_SCORE_CHANGED);
+        eventLoop.register(this, EventType.PLAYER_SHIELDS_CHANGED);
     }
 
     private void unRegisterEvents() {
@@ -132,6 +150,7 @@ public class GameScreen extends DefaultScreen implements EventListener {
         eventLoop.unregister(this, EventType.PLAYER_LIVES_CHANGED);
         eventLoop.unregister(this, EventType.PLAYER_BOOST_CHANGED);
         eventLoop.unregister(this, EventType.PLAYER_SCORE_CHANGED);
+        eventLoop.unregister(this, EventType.PLAYER_SHIELDS_CHANGED);
     }
 
     private void initGame(){
@@ -164,15 +183,35 @@ public class GameScreen extends DefaultScreen implements EventListener {
             debugRenderer = new Box2DDebugRenderer();
         }
     }
-	
+
+    private Table createContainer(Actor actor){
+        Table table = new Table();
+        table.add(actor);
+        table.setTransform(true);
+        return table;
+    }
+
+    private Label createLabel(){
+        final Skin skin = assets.getSkin();
+        return new Label("0", skin, "default-large");
+    }
+
+    private void centreOrigin(Actor actor){
+        actor.setOrigin(actor.getWidth()/2, actor.getHeight()/2);
+    }
+
 	private void initUI(){
 		Table root = new Table();
         root.setFillParent(true);
-        final Skin skin = assets.getSkin();
-        scoreLabel = new Label("0", skin, "default-large");
-        scoreLabel.setColor(skin.getColor("toxic"));
-        livesLabel = new Label("0", skin, "default-large");
-        livesLabel.setColor(skin.getColor("toxic"));
+
+        scoreLabel = createLabel();
+        scoreContainer = createContainer(scoreLabel);
+
+        livesLabel = createLabel();
+        livesContainer = createContainer(livesLabel);
+
+        shieldsLabel = createLabel();
+        shieldsContainer = createContainer(shieldsLabel);
 
         topContainer = new Table();
         dashDelay = config.getPlayerDashDelay();
@@ -184,10 +223,12 @@ public class GameScreen extends DefaultScreen implements EventListener {
         topContainer.row();
 
         Table labelContainer = new Table();
-        labelContainer.add(new Label(assets.getText(Assets.SCORE), skin)).padRight(20);
-        labelContainer.add(scoreLabel);
+        labelContainer.add(new Label(assets.getText(Assets.SCORE), assets.getSkin())).padRight(20);
+        labelContainer.add(scoreContainer);
         labelContainer.add().expandX().expandX().fillX();
-        labelContainer.add(livesLabel).padRight(20);
+        labelContainer.add(shieldsContainer).padRight(20);
+        labelContainer.add(new Image(assets.getUIRegion("shield_small"))).padRight(20);
+        labelContainer.add(livesContainer).padRight(20);
         labelContainer.add(new Image(assets.getUIRegion("hearth_small")));
         topContainer.add(labelContainer).expandX().fillX();
         // invisible at start
@@ -242,6 +283,10 @@ public class GameScreen extends DefaultScreen implements EventListener {
             boostTut = new Boost(assets);
             eventLoop.register(this, EventType.SHOW_BOOST_TUT);
         }
+
+        toxicColor = assets.getSkin().getColor("toxic");
+        redColor = assets.getSkin().getColor("red");
+        whiteColor = assets.getSkin().getColor("white");
     }
 
     private void initLocator(){
@@ -311,6 +356,8 @@ public class GameScreen extends DefaultScreen implements EventListener {
                 playerStats.getScore(), playerStats.getMaxScore(), playerStats.isPremium());
         actionResolver.showAd();
         gameOverDialog.show(stage);
+        // so keyboard works when dialog is visible
+        stage.setKeyboardFocus(null);
     }
 
     private void initZoom(){
@@ -343,7 +390,7 @@ public class GameScreen extends DefaultScreen implements EventListener {
                 isZooming = false;
                 topContainer.setColor(1, 1, 1, 1);
                 if (jumpTut != null){
-                    jumpTut.init(10, 16);
+                    jumpTut.init(gameCamera.position.x+8, 16);
                 }
             }
             background.zoom(zoom);
@@ -351,12 +398,15 @@ public class GameScreen extends DefaultScreen implements EventListener {
         }
     }
 
+    public void updateCamera(float x){
+        gameCamera.position.x = x + playerOffset;
+    }
+
     @Override
 	public void update(float delta) {
         super.update(delta);
-
 		if (!isPlayerDead){
-			gameCamera.position.x = sfgGame.getPlayerPos().x + playerOffset;// + PLAYER_OFFSET;
+			updateCamera(sfgGame.getPlayerX());
 		}
         background.update(delta, gameCamera.position.x);
         gameCamera.update();
@@ -365,11 +415,19 @@ public class GameScreen extends DefaultScreen implements EventListener {
         }
 
         if (jumpTut != null){
-            jumpTut.update(delta, gameCamera.position.x);
+            jumpTut.update(delta, gameCamera.position.x+2);
+            if (jumpTut.isDisabled()) {
+                jumpTut = null;
+            }
         }
+
         if (boostTut != null){
-            boostTut.update(delta, gameCamera.position.x);
+            boostTut.update(delta, gameCamera.position.x+2);
+            if (boostTut.isDisabled()) {
+                boostTut = null;
+            }
         }
+
         switch (state) {
             case PAUSED:
                 break;
@@ -432,9 +490,8 @@ public class GameScreen extends DefaultScreen implements EventListener {
 	}
 
 	public void handleTap(){
-        if (jumpTut != null) {
-            jumpTut.disable();
-            jumpTut = null;
+        if (jumpTut != null && jumpTut.isVisible()) {
+            jumpTut.hide();
             settings.setTutJumpShowed(true);
         }
 		switch (state) {
@@ -465,9 +522,8 @@ public class GameScreen extends DefaultScreen implements EventListener {
 	}
 	
 	public void handleFling(){
-        if (boostTut!=null){
-            boostTut.disable();
-            boostTut = null;
+        if (boostTut!=null && boostTut.isVisible()){
+            boostTut.hide();
             settings.setTutBoostShowed(true);
             eventLoop.unregister(this, EventType.SHOW_BOOST_TUT);
         }
@@ -546,10 +602,6 @@ public class GameScreen extends DefaultScreen implements EventListener {
         deInitLocator();
     }
 
-	public World getWorld() {
-		return world;
-	}
-
 	public Camera getCamera() {
 		return gameCamera;
 	}
@@ -572,13 +624,16 @@ public class GameScreen extends DefaultScreen implements EventListener {
     public void handleEvent(Event e) {
         switch (e.getType()){
             case EventType.SHOW_BOOST_TUT:
-                initBoostTut();
+                initBoostTut((Vector2)e.getData());
                 break;
             case EventType.PLAYER_ALIVE:
                 setPlayerDead(!(Boolean) e.getData());
                 break;
             case EventType.PLAYER_LIVES_CHANGED:
                 setLives((Integer) e.getData());
+                break;
+            case EventType.PLAYER_SHIELDS_CHANGED:
+                setShields((Integer) e.getData());
                 break;
             case EventType.PLAYER_SCORE_CHANGED:
                 setScore((Integer) e.getData());
@@ -590,22 +645,86 @@ public class GameScreen extends DefaultScreen implements EventListener {
         }
     }
 
-    private void initBoostTut(){
+
+    private void initBoostTut(Vector2 pos){
         if (boostTut != null){
-            boostTut.init(10, 16);
+            boostTut.init(pos.x-14, 16);
         }
     }
 
     private void setScore(int value){
         scoreLabel.setText(String.valueOf(value));
+        positiveValueAction(scoreContainer, scoreLabel);
     }
 
-    private void setPlayerDead(Boolean isDead){
-        isPlayerDead = isDead;
+    private void positiveValueAction(Actor scaleActor, Actor colorActor){
+        centreOrigin(scaleActor);
+        scaleActor.clearActions();
+        scaleActor.addAction(
+                Actions.sequence(
+                        Actions.parallel(
+                                Actions.scaleTo(1.33f, 1.33f, 0.3f)
+                        ),
+                        Actions.parallel(
+                                Actions.scaleTo(1f, 1f, 0.3f)
+                        )
+        ));
+        colorActor.addAction(
+                Actions.sequence(
+                        Actions.parallel(
+                                Actions.color(toxicColor, 0.3f)
+                        ),
+                        Actions.parallel(
+                                Actions.color(whiteColor, 0.3f)
+                        )
+                ));
+    }
+
+    private void negativeValueAction(Actor scaleActor, Actor colorActor){
+        centreOrigin(scaleActor);
+        scaleActor.clearActions();
+        scaleActor.addAction(
+                Actions.sequence(
+                        Actions.parallel(
+                                Actions.scaleTo(0.8f, 0.8f, 0.3f)
+                        ),
+                        Actions.parallel(
+                                Actions.scaleTo(1f, 1f, 0.3f)
+                        )
+                ));
+        colorActor.addAction(
+                Actions.sequence(
+                        Actions.parallel(
+                                Actions.color(redColor, 0.3f)
+                        ),
+                        Actions.parallel(
+                                Actions.color(whiteColor, 0.3f)
+                        )
+                ));
     }
 
     private void setLives(int lives) {
         livesLabel.setText(String.valueOf(lives));
+        if (lives > lastLives){
+            positiveValueAction(livesContainer, livesLabel);
+        } else {
+            negativeValueAction(livesContainer, livesLabel);
+        }
+        lastLives = lives;
+    }
+
+    private void setShields(int shields) {
+        shieldsLabel.setText(String.valueOf(shields));
+        if (shields > lastShields){
+            positiveValueAction(shieldsContainer, shieldsLabel);
+        } else {
+            negativeValueAction(shieldsContainer, shieldsLabel);
+        }
+        lastShields = shields;
+    }
+
+    private void setPlayerDead(Boolean isDead){
+        isPlayerDead = isDead;
     }
 
     private void setBoostProgress(float value){

@@ -16,13 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.piotrjastrzebski.sfg.game.tutorials;
+package io.piotrjastrzebski.sfg.game.objects;
 
-import io.piotrjastrzebski.sfg.utils.Assets;
-
-public class Jump extends Tutorial {
-    public Jump(Assets assets) {
-        super(assets.getSkeletonData(Assets.Animations.TUT_JUMP),
-                assets.getAnimationStateData(Assets.Animations.TUT_JUMP));
-    }
+public interface VariableUpdatable {
+    public void variableUpdate(float delta, float alpha);
 }

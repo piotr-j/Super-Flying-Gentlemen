@@ -20,32 +20,37 @@ package io.piotrjastrzebski.sfg.game.objects;
 
 import box2dLight.ConeLight;
 import io.piotrjastrzebski.sfg.utils.Locator;
+import io.piotrjastrzebski.sfg.utils.Transform;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.CircleShape;
+import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
 import com.badlogic.gdx.utils.Pool.Poolable;
 
-public class Rocket implements Poolable, Position {
+public class Rocket implements Poolable, FixedUpdatable, VariableUpdatable {
 	private Body body;
 	private World world;
 	private Sprite rocketSprite;
 	private boolean isExploded = false;
+	private boolean isInit = false;
 	private ConeLight coneLight;
     private float lastAngle;
     private final float HALF_WIDTH;
     private final float LIGHT_OFFSET_X = 0.8f;
 
+    private Transform transform;
+
     public Rocket() {
 		this.world = Locator.getWorld();
+        transform = new Transform();
 		rocketSprite = Locator.getAssets().getScaledSprite("rocket");
         HALF_WIDTH = rocketSprite.getWidth()*0.5f;
         rocketSprite.setOrigin(HALF_WIDTH, 0);
@@ -65,82 +70,88 @@ public class Rocket implements Poolable, Position {
 		
 		FixtureDef fixtureDef = new FixtureDef();
 		fixtureDef.shape = circle;
-		fixtureDef.density = 1f; 
+		fixtureDef.density = 1f;
 		fixtureDef.friction = 0.1f;
 		fixtureDef.restitution = 0.1f;
-		
-		body.createFixture(fixtureDef);
+        fixtureDef.isSensor = true;
+
+        body.createFixture(fixtureDef);
 		body.setUserData(this);
 		body.setBullet(true);
 		circle.dispose();
 	}
 
-
 	/**
 	 * Init the bullet and set the position
 	 * This must be called outside of world.step()
 	 */
-	public void init(float x, float y, float angle, float vx, float vy){
-		isExploded = false;
-		body.setAngularVelocity(0);
-		body.setLinearVelocity(vx, vy);
-		body.setTransform(x, y, angle);
-		body.setGravityScale(1);
-		body.setAwake(true);
-
-        lastAngle = body.getLinearVelocity().nor().angle()-90;
-        update(0);
+	public void init(float x, float y){
+        isInit = true;
+        body.setAngularVelocity(0);
+        body.setTransform(x, y, 0);
+        body.applyLinearImpulse(0.15f, 0, 0, 0, true);
+        isExploded = false;
+        lastAngle = 180+15;
+        transform.init(x, y, lastAngle);
 	}
 
-	public void update(float delta){
-		final Vector2 pos = body.getPosition();
-		float angle = body.getLinearVelocity().nor().angle()-90;
+    @Override
+    public void fixedUpdate() {
+        if (!isInit)
+            return;
+        float angle = body.getLinearVelocity().nor().angle()-90;
         // ignore large spike after collision
         if (Math.abs(lastAngle - angle) > 10f){
             angle = lastAngle;
         } else {
             lastAngle = angle;
         }
-        rocketSprite.setRotation(180-angle);
-		coneLight.setDirection(-angle - 90);
-        rocketSprite.setPosition(pos.x-HALF_WIDTH, pos.y);
-        final float radAngle = (-angle-90)*MathUtils.degreesToRadians;
+        transform.set(body.getPosition(), angle);
+    }
+
+    @Override
+    public void variableUpdate(float delta, float alpha) {
+        if (!isInit)
+            return;
+        float lerpAngle = transform.getLerpAngle(alpha);
+        float lerpX = transform.getLerpX(alpha);
+        float lerpY = transform.getLerpY(alpha);
+
+        rocketSprite.setRotation(180-lerpAngle);
+        rocketSprite.setPosition(lerpX - HALF_WIDTH, lerpY);
+
+        coneLight.setDirection(-lerpAngle - 90);
+        final float radAngle = (-lerpAngle-90)*MathUtils.degreesToRadians;
         final float dX = LIGHT_OFFSET_X * MathUtils.cos(radAngle);
         final float dY = LIGHT_OFFSET_X * MathUtils.sin(radAngle);
-        coneLight.setPosition(pos.x+dX, pos.y+dY);
-	}
+        coneLight.setPosition(lerpX+dX, lerpY+dY);
+    }
 	
 	public void draw(Batch batch){
 		rocketSprite.draw(batch);
 	}
-	
-	public void destroy(){
-		if (body!=null){
-			world.destroyBody(body);
-			body = null;
-		}
-	}
 
 	@Override
 	public void reset() {
+        isInit = false;
 		body.setAngularVelocity(0);
 		body.setLinearVelocity(0, 0);
 		body.setTransform(-10, -100, 0);
-		body.setGravityScale(0);
 		body.setAwake(false);
         coneLight.setPosition(-100, -100);
+        isExploded = false;
     }
 	
 	public void explode(){
-		isExploded = true;
+        if (isInit)
+		    isExploded = true;
 	}
 	
 	public boolean isExploded(){
 		return isExploded;
 	}
 
-    @Override
-    public Vector2 getPos() {
-        return body.getPosition();
+    public Transform getTransform() {
+        return transform;
     }
 }

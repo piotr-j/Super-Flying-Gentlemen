@@ -37,7 +37,9 @@ public class Config {
 	private Range<Float> obstacleGapSize;
 	private Range<Integer> pickupLive;
 	private Range<Integer> pickupBoost;
-	
+	private Range<Integer> pickupShield;
+	private Range<Integer> pickupToxic;
+
 	private JsonValue world;
 	private JsonValue player;
 	private JsonValue pickup;
@@ -96,6 +98,12 @@ public class Config {
 		
 		final JsonValue boostPickup = pickup.get("boost_range");
 		pickupBoost = new Range<Integer>(boostPickup.getInt("min"), boostPickup.getInt("max"));
+
+        final JsonValue shieldPickup = pickup.get("shield_range");
+        pickupShield = new Range<Integer>(shieldPickup.getInt("min"), shieldPickup.getInt("max"));
+
+        final JsonValue toxicPickup = pickup.get("toxic_range");
+        pickupToxic = new Range<Integer>(toxicPickup.getInt("min"), toxicPickup.getInt("max"));
 	}
 
     public Difficulty getDifficulty() {
@@ -114,6 +122,11 @@ public class Config {
 	public int getPlayerMaxLives() {
 		return player.getInt("lives");
 	}
+
+    public int getPlayerShields() {
+        return player.getInt("shields");
+    }
+
 	/**
 	 * @return the playerFlySpeed
 	 */
@@ -187,6 +200,14 @@ public class Config {
 
     public Range<Integer> getPickupBoost() {
         return pickupBoost;
+    }
+
+    public Range<Integer> getPickupToxic() {
+        return pickupToxic;
+    }
+
+    public Range<Integer> getPickupShield() {
+        return pickupShield;
     }
 
     public float getPickupSpawnChance(){

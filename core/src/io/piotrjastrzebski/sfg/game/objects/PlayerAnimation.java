@@ -38,15 +38,15 @@ public class PlayerAnimation {
 	private AnimationState animState;
 	
 	public PlayerAnimation(){
-
-        final SkeletonData skeletonData = Locator.getAssets().getPlayerSkeletonData();
+        final Assets assets = Locator.getAssets();
+        final SkeletonData skeletonData = assets.getSkeletonData(Assets.Animations.PLAYER);
 		skeleton = new Skeleton(skeletonData);
 		
 		fallAnimation = skeletonData.findAnimation("fall");
 		shootAnimation = skeletonData.findAnimation("shoot");
 		boostAnimation = skeletonData.findAnimation("boost");
 
-        final AnimationStateData stateData = Locator.getAssets().getPlayerAnimationData();
+        final AnimationStateData stateData = assets.getAnimationStateData(Assets.Animations.PLAYER);
 
         stateData.setMix(fallAnimation, shootAnimation, 0.5f);
         stateData.setMix(shootAnimation, fallAnimation, 0.5f);

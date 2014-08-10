@@ -30,7 +30,7 @@ import io.piotrjastrzebski.sfg.utils.Assets;
 import io.piotrjastrzebski.sfg.utils.Box2dUtils;
 import io.piotrjastrzebski.sfg.utils.Locator;
 
-public class Ceiling implements Poolable, Position {
+public class Ceiling implements Poolable, Position, ViewPortUpdate {
 	private final static float WIDTH = 10;
     private final static float HEIGHT = 4;
 
@@ -120,6 +120,7 @@ public class Ceiling implements Poolable, Position {
 		}
 	}
 
+    @Override
     public void updateViewPort(float width, float height){
         viewHalfWidth = width*0.5f;
         viewHeight = height;

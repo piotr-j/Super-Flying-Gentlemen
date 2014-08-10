@@ -1,6 +1,6 @@
 
 sfg_ui.png
-size: 2045,1022
+size: 2029,1022
 format: RGBA8888
 filter: MipMapLinearNearest,Nearest
 repeat: none
@@ -20,7 +20,7 @@ about_down
   index: -1
 boost_slider
   rotate: false
-  xy: 1034, 509
+  xy: 1642, 680
   size: 62, 30
   split: 18, 18, 0, 30
   pad: 18, 18, -1, -1
@@ -29,7 +29,7 @@ boost_slider
   index: -1
 boost_slider_burn
   rotate: false
-  xy: 1522, 664
+  xy: 341, 383
   size: 54, 18
   orig: 54, 18
   offset: 0, 0
@@ -43,7 +43,7 @@ boost_slider_fill
   index: -1
 boost_slider_knob
   rotate: false
-  xy: 1642, 694
+  xy: 90, 7
   size: 20, 16
   orig: 20, 16
   offset: 0, 0
@@ -107,7 +107,7 @@ finger
   index: -1
 finger_touch
   rotate: false
-  xy: 2023, 980
+  xy: 1757, 910
   size: 20, 40
   orig: 20, 40
   offset: 0, 0
@@ -172,7 +172,7 @@ hearth_small
   index: -1
 knob
   rotate: false
-  xy: 1757, 916
+  xy: 1757, 872
   size: 20, 34
   orig: 20, 34
   offset: 0, 0
@@ -261,9 +261,23 @@ settings_down
   orig: 128, 128
   offset: 0, 0
   index: -1
+shield
+  rotate: false
+  xy: 912, 318
+  size: 116, 116
+  orig: 116, 116
+  offset: 0, 0
+  index: -1
+shield_small
+  rotate: false
+  xy: 1708, 651
+  size: 53, 59
+  orig: 53, 59
+  offset: 0, 0
+  index: -1
 slider
   rotate: false
-  xy: 912, 338
+  xy: 1522, 652
   size: 62, 30
   split: 21, 21, 0, 30
   pad: 21, 21, -1, -1
@@ -293,7 +307,7 @@ sound_on
   index: -1
 touch
   rotate: false
-  xy: 1016, 440
+  xy: 2023, 956
   size: 4, 64
   orig: 4, 64
   offset: 0, 0
@@ -307,7 +321,7 @@ white
   index: -1
 window
   rotate: false
-  xy: 912, 372
+  xy: 1034, 477
   size: 62, 62
   split: 25, 25, 25, 25
   orig: 62, 62

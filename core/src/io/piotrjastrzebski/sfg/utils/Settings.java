@@ -22,12 +22,17 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Preferences;
 
 import io.piotrjastrzebski.sfg.SFGApp;
+import io.piotrjastrzebski.sfg.game.objects.Pickup;
 
 public class Settings {
     private final static String RATED = "RATED";
     private final static String LIGHTS_STATE = "LIGHTS_STATE";
     private final static String TUT_1_SHOWED = "TUT_1_SHOWED";
     private final static String TUT_2_SHOWED = "TUT_2_SHOWED";
+    private final static String PT_1_SHOWED = "PT_1_SHOWED";
+    private final static String PT_2_SHOWED = "PT_2_SHOWED";
+    private final static String PT_3_SHOWED = "PT_3_SHOWED";
+    private final static String PT_4_SHOWED = "PT_4_SHOWED";
     public final static String IMMERSIVE_MODE_STATE = "IMMERSSIVE_MODE_STATE";
     public final static boolean IMMERSIVE_MODE_OFF = false;
     public final static boolean IMMERSIVE_MODE_ON = true;
@@ -39,6 +44,10 @@ public class Settings {
     private int lightsState;
     private boolean tut1Showed;
     private boolean tut2Showed;
+    private boolean pt1Showed;
+    private boolean pt2Showed;
+    private boolean pt3Showed;
+    private boolean pt4Showed;
     private boolean immersiveState;
     private boolean rated;
 
@@ -48,6 +57,10 @@ public class Settings {
         immersiveState = preferences.getBoolean(IMMERSIVE_MODE_STATE, IMMERSIVE_MODE_ON);
         tut1Showed = preferences.getBoolean(TUT_1_SHOWED, false);
         tut2Showed = preferences.getBoolean(TUT_2_SHOWED, false);
+        pt1Showed = preferences.getBoolean(PT_1_SHOWED, false);
+        pt2Showed = preferences.getBoolean(PT_2_SHOWED, false);
+        pt3Showed = preferences.getBoolean(PT_3_SHOWED, false);
+        pt4Showed = preferences.getBoolean(PT_4_SHOWED, false);
         rated = preferences.getBoolean(RATED, false);
         isLightsEnabled = lightsState != LIGHTS_OFF;
     }
@@ -57,6 +70,10 @@ public class Settings {
         preferences.putBoolean(IMMERSIVE_MODE_STATE, immersiveState);
         preferences.putBoolean(TUT_1_SHOWED, tut1Showed);
         preferences.putBoolean(TUT_1_SHOWED, tut1Showed);
+        preferences.putBoolean(PT_1_SHOWED, pt1Showed);
+        preferences.putBoolean(PT_2_SHOWED, pt2Showed);
+        preferences.putBoolean(PT_3_SHOWED, pt3Showed);
+        preferences.putBoolean(PT_4_SHOWED, pt4Showed);
         preferences.putBoolean(RATED, rated);
         preferences.flush();
     }
@@ -101,6 +118,35 @@ public class Settings {
         return tut2Showed;
     }
 
+    public boolean getPickupTutShowed(Pickup.Type type){
+        switch (type){
+            case LIVES: return pt1Showed;
+            case BOOST: return pt2Showed;
+            case SHIELD: return pt3Showed;
+            case TOXIC: return pt4Showed;
+            default:  return false;
+        }
+    }
+
+    public void setPickupTutShowed(Pickup.Type type){
+        switch (type){
+            case LIVES:
+                pt1Showed = true;
+                break;
+            case BOOST:
+                pt2Showed = true;
+                break;
+            case SHIELD:
+                pt3Showed = true;
+                break;
+            case TOXIC:
+                pt4Showed = true;
+                break;
+            default: break;
+        }
+        saveState();
+    }
+
     public boolean isRated() {
         return rated;
     }
@@ -110,4 +156,13 @@ public class Settings {
         saveState();
     }
 
+    public void resetTutorials() {
+        pt1Showed = false;
+        pt2Showed = false;
+        pt3Showed = false;
+        pt4Showed = false;
+        tut1Showed = false;
+        tut2Showed = false;
+        saveState();
+    }
 }

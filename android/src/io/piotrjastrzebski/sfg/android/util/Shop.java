@@ -70,7 +70,8 @@ public class Shop implements IabHelper.OnIabSetupFinishedListener, IabHelper.OnI
                 publicKey = publicKey.replace("'", "W");
 
                 iapHelper = new IabHelper(activity, publicKey);
-                iapHelper.enableDebugLogging(true);
+                if(SFGApp.DEBUG_IAP)
+                    iapHelper.enableDebugLogging(true);
                 iapHelper.startSetup(Shop.this);
 
                 preferences = Gdx.app.getPreferences(SFGApp.PREFS);

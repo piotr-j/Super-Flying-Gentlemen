@@ -19,23 +19,25 @@
 package io.piotrjastrzebski.sfg.game.objects.obstacles;
 
 public class PartTop extends Part {
-	
-	public PartTop(Obstacle parent, SpikePool spikePool, HammerPool hammerPool) {
-		super(parent, spikePool, hammerPool);
+	public PartTop(Obstacle parent) {
+		super(parent);
 	}
 
 	@Override
 	public void init(float x, float y, Type type) {
 		super.init(x, y+HEIGHT, type);
         // add sensor so the player will be killed on touch
-        if (type != Type.STATIC)
+        if (type == Type.SPIKE || type == Type.HAMMER)
             sensor.setTransform(x, y, 0);
 
         float tileOffset;
 		if (type == Type.STATIC){
             cap.init(x, y, true);
             tileOffset = 6;
-		} else {
+		} else if (type == Type.MOVING) {
+            endPoint.init(x, y, false);
+            tileOffset = 5.5f;
+        } else {
             endPoint.init(x, y, false);
             tileOffset = 10;
 		}

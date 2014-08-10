@@ -34,7 +34,8 @@ public class InputHandler<T extends DefaultScreen>
 	public InputHandler(T screen){
 		this.screen = screen;
 		im = new InputMultiplexer(
-                this, screen.getStage() , new GestureDetector(this));
+                screen.getStage(), this, new GestureDetector(this));
+        
 	}
 	
 	public InputMultiplexer getIM(){

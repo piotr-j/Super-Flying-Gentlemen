@@ -22,6 +22,7 @@ import io.piotrjastrzebski.sfg.utils.Assets;
 
 public class Boost extends Tutorial {
     public Boost(Assets assets){
-        super(assets.getTutBoostSkeletonData(), assets.getTutBoostAnimationData());
+        super(assets.getSkeletonData(Assets.Animations.TUT_BOOST),
+                assets.getAnimationStateData(Assets.Animations.TUT_BOOST));
     }
 }

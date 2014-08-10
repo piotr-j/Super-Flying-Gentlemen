@@ -18,6 +18,11 @@
 
 package io.piotrjastrzebski.sfg.game.objects.obstacles;
 
+import io.piotrjastrzebski.sfg.game.objects.obstacles.endpoints.EndPoint;
+import io.piotrjastrzebski.sfg.game.objects.obstacles.endpoints.Hammer;
+import io.piotrjastrzebski.sfg.game.objects.obstacles.endpoints.Moving;
+import io.piotrjastrzebski.sfg.game.objects.obstacles.endpoints.NullEndPoint;
+import io.piotrjastrzebski.sfg.game.objects.obstacles.endpoints.Spike;
 import io.piotrjastrzebski.sfg.screen.GameScreen;
 import io.piotrjastrzebski.sfg.utils.Locator;
 
@@ -27,15 +32,12 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
+import com.badlogic.gdx.utils.Pools;
 import com.esotericsoftware.spine.SkeletonRenderer;
 
 public abstract class Part {
     final static float HEIGHT = GameScreen.VIEWPORT_HEIGHT/2-2;
-    public enum Type {STATIC, SPIKE, HAMMER}
-
-    private final SpikePool spikePool;
-    private final HammerPool hammerPool;
-
+    public enum Type {STATIC, SPIKE, HAMMER, MOVING}
 	protected Body pillar;
 	protected Body sensor;
 
@@ -49,9 +51,7 @@ public abstract class Part {
     protected EndPoint endPoint;
     protected EndPoint nullEndPoint;
 
-	public Part(Obstacle parent, SpikePool spikePool, HammerPool hammerPool) {
-        this.spikePool = spikePool;
-        this.hammerPool = hammerPool;
+	public Part(Obstacle parent) {
         final World world = Locator.getWorld();
         nullEndPoint = new NullEndPoint();
 		tiles = new Tile[8];
@@ -85,17 +85,21 @@ public abstract class Part {
 		isExecuting = false;
 		this.type = type;
         if (endPoint != null){
-            endPoint.free();
+            Pools.free(endPoint);
             endPoint = null;
         }
 		switch (type) {
 		case SPIKE:
-            endPoint = spikePool.obtain();
+            endPoint = Pools.obtain(Spike.class);
 			canExecute = true;
 			break;
 		case HAMMER:
-            endPoint = hammerPool.obtain();
+            endPoint = Pools.obtain(Hammer.class);
 			canExecute = true;
+            break;
+        case MOVING:
+            endPoint = Pools.obtain(Moving.class);
+            canExecute = false;
             break;
 		case STATIC:
 		default:
@@ -126,13 +130,4 @@ public abstract class Part {
         endPoint.update(delta);
         cap.update(delta);
     }
-	
-	/**
-	 * Destroy underlying box2d bodies
-	 */
-	public void destroy(){
-        if (endPoint!=null){
-            endPoint.destroy();
-        }
-	}
 }

@@ -26,9 +26,7 @@ import io.piotrjastrzebski.sfg.game.objects.PlayerRagDoll;
 import io.piotrjastrzebski.sfg.game.objects.Rocket;
 import io.piotrjastrzebski.sfg.game.objects.obstacles.SensorType;
 import io.piotrjastrzebski.sfg.utils.Locator;
-import io.piotrjastrzebski.sfg.utils.pools.PickupPool;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Contact;
 import com.badlogic.gdx.physics.box2d.ContactImpulse;
@@ -36,6 +34,7 @@ import com.badlogic.gdx.physics.box2d.ContactListener;
 import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.Manifold;
 import com.badlogic.gdx.utils.Pool;
+import com.badlogic.gdx.utils.Pools;
 
 public class ContactDispatcher implements ContactListener {
 	private EventLoop events;
@@ -46,21 +45,22 @@ public class ContactDispatcher implements ContactListener {
         playerContactPool = new PlayerContactPool();
 	}
 	
-	private void checkSensor(Fixture sensor, Fixture other){
+	private boolean checkSensor(Fixture sensor, Fixture other){
 		final SensorType type = (SensorType) sensor.getUserData();
 		final Object sensorData = sensor.getBody().getUserData();
 		final Object otherData = other.getBody().getUserData();
         if (type == null)
-            return;
+            return false;
 		switch (type) {
 		case SCORE:
 			if (otherData instanceof Player){
                 events.queueEvent(EventType.PLAYER_SCORED, sensorData);
 			}
-			break;
+			return true;
 		default:
 			break;
 		}
+        return false;
 	}
 	
 	@Override
@@ -69,12 +69,9 @@ public class ContactDispatcher implements ContactListener {
 		Fixture fA = contact.getFixtureA();
 		Fixture fB = contact.getFixtureB();
 		// all sensors in game are static, so only one fixture can be a sensor
-		if (fA.isSensor()){
-			checkSensor(fA, fB);
+		if (fA.isSensor() && checkSensor(fA, fB)){
 			return;
-		}
-		if (fB.isSensor()){
-			checkSensor(fB, fA);
+		} else if (fB.isSensor() && checkSensor(fB, fA)){
 			return;
 		}
 
@@ -186,11 +183,20 @@ public class ContactDispatcher implements ContactListener {
         // small class that holds position and object for player contact
         // should be freed after use
         public class PlayerContact {
-            public Vector2 position;
-            public Object object;
+            private Vector2 position;
+            private Object object;
             PlayerContact() {}
 
+            public Vector2 position(){
+                return position;
+            }
+
+            public Object content(){
+                return object;
+            }
+
             public void free () {
+                Pools.free(position);
                 position = null;
                 object = null;
                 PlayerContactPool.this.free(this);

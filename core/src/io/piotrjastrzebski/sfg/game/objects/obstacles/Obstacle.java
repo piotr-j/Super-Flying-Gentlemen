@@ -19,8 +19,8 @@
 package io.piotrjastrzebski.sfg.game.objects.obstacles;
 
 import io.piotrjastrzebski.sfg.game.objects.Position;
+import io.piotrjastrzebski.sfg.game.objects.ViewPortUpdate;
 import io.piotrjastrzebski.sfg.game.objects.obstacles.Part.Type;
-import io.piotrjastrzebski.sfg.screen.GameScreen;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.math.MathUtils;
@@ -28,67 +28,83 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Pool.Poolable;
 import com.esotericsoftware.spine.SkeletonRenderer;
 
-public class Obstacle implements Poolable, Position {
+public class Obstacle implements Poolable, Position, ViewPortUpdate {
 	// width of the obstacle
 	public static final float WIDTH = 3;
-	private final PartBottom bottomObstacle;
-	private final PartTop topObstacle;
+	private final PartBottom partBottom;
+	private final PartTop partTop;
 	private final ScoreSensor scoreSensor;
     private Type topType;
     private Type botType;
     private Type type;
     private float x;
+    private float y;
     private float topY;
-    private Vector2 pos;
 
+    private Vector2 pos;
     private float botY;
     private float viewHalfWidth;
-    private float viewHalfHeight;
 
+    private float viewHalfHeight;
     private boolean init = false;
 
-	public Obstacle(SpikePool spikePool, HammerPool hammerPool) {
+    public Obstacle() {
         pos = new Vector2();
 		scoreSensor = new ScoreSensor(this);
-		topObstacle = new PartTop(this, spikePool, hammerPool);
-		bottomObstacle = new PartBottom(this, spikePool, hammerPool);
+		partTop = new PartTop(this);
+		partBottom = new PartBottom(this);
 	}
 
-	public void init(float x, float botY, float topY){
-		switch (MathUtils.random(3)) {
-		case 0:
+    public void initType() {
+		switch (Type.values()[MathUtils.random(Type.values().length-1)]) {
+		case SPIKE:
             if (MathUtils.randomBoolean()){
-                init(x, botY, topY, Type.SPIKE, Type.STATIC);
+                initType(Type.SPIKE, Type.STATIC);
             } else {
-                init(x, botY, topY, Type.STATIC, Type.SPIKE);
+                initType(Type.STATIC, Type.SPIKE);
             }
             type = Type.SPIKE;
 			break;
-		case 1:
-            init(x, botY, topY, Type.HAMMER, Type.HAMMER);
-            type = Type.SPIKE;
+		case HAMMER:
+            initType(Type.HAMMER, Type.HAMMER);
             break;
+        case MOVING:
+            initType(Type.MOVING, Type.MOVING);
+            break;
+        case STATIC:
 		default:
-            init(x, botY, topY, Type.STATIC, Type.STATIC);
+            initType(Type.STATIC, Type.STATIC);
             type = Type.STATIC;
             break;
 		}
-	}
+//        init(x, botY, topY);
+//        this.botType = Type.MOVING;
+//        this.topType = Type.MOVING;
+//        type = Type.MOVING;
+    }
 
-    public void init(float x, float botY, float topY, Type botType, Type topType){
-        this.x = x;
-        this.topY = topY;
-        this.botY = botY;
+    public void initType(Type botType, Type topType) {
         this.botType = botType;
         this.topType = topType;
+        // other types are symmetrical
+        if (botType == Type.SPIKE || topType == Type.SPIKE){
+            type = Type.SPIKE;
+        } else {
+            type = botType;
+        }
+    }
+
+    public void init(float x, float botY, float topY){
+        this.x = x;
+        this.y = (botY+topY)/2;
+        this.topY = topY;
+        this.botY = botY;
         init = true;
         pos.set(x, (topY + botY)/2);
         // offset from center of obstacle
         scoreSensor.init(x+4);
-
-        // 28 - full obstacle height
-        topObstacle.init(x, topY, topType);
-        bottomObstacle.init(x, botY, botType);
+        partTop.init(x, topY, topType);
+        partBottom.init(x, botY, botType);
     }
 
     public void disableScore(){
@@ -96,8 +112,8 @@ public class Obstacle implements Poolable, Position {
     }
 
 	public void execute(boolean playerKilled){
-		topObstacle.execute(playerKilled);
-		bottomObstacle.execute(playerKilled);
+		partTop.execute(playerKilled);
+		partBottom.execute(playerKilled);
 	}
 
 	float camX;
@@ -108,8 +124,8 @@ public class Obstacle implements Poolable, Position {
         // offsets as x is the center
         if (x > camX + viewHalfWidth +3 || x < camX- viewHalfWidth -4)
             return;
-		topObstacle.update(delta);
-		bottomObstacle.update(delta);
+		partTop.update(delta);
+		partBottom.update(delta);
 	}
 	
 	public void draw(Batch batch, SkeletonRenderer skeletonRenderer){
@@ -118,24 +134,19 @@ public class Obstacle implements Poolable, Position {
         // offsets as x is the center
         if (x > camX + viewHalfWidth +3 || x < camX- viewHalfWidth -4)
             return;
-		topObstacle.draw(batch, skeletonRenderer);
-		bottomObstacle.draw(batch, skeletonRenderer);
-	}
-	
-	public void destroy(){
-		topObstacle.destroy();
-		bottomObstacle.destroy();
-		scoreSensor.destroy();
+		partTop.draw(batch, skeletonRenderer);
+		partBottom.draw(batch, skeletonRenderer);
 	}
 
 	@Override
 	public void reset() {
         init = false;
 		scoreSensor.init(-50);
-		topObstacle.init(-50, 0, Type.STATIC);
-		bottomObstacle.init(-50, 0, Type.STATIC);
+		partTop.init(-50, 0, Type.STATIC);
+		partBottom.init(-50, 0, Type.STATIC);
 	}
 
+    @Override
     public void updateViewPort(float width, float height){
         viewHalfWidth = width*0.5f;
         viewHalfHeight = height*0.5f;
@@ -157,8 +168,13 @@ public class Obstacle implements Poolable, Position {
         return topY;
     }
 
+
     public float getBotY() {
         return botY;
+    }
+
+    public float getY() {
+        return y;
     }
 
     public float getX() {

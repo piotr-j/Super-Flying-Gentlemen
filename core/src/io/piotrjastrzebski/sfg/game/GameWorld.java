@@ -20,28 +20,30 @@ package io.piotrjastrzebski.sfg.game;
 
 import io.piotrjastrzebski.sfg.events.EventLoop;
 import io.piotrjastrzebski.sfg.events.EventType;
+import io.piotrjastrzebski.sfg.game.objects.Ceiling;
+import io.piotrjastrzebski.sfg.game.objects.Ground;
+import io.piotrjastrzebski.sfg.game.objects.Pickup;
+import io.piotrjastrzebski.sfg.game.objects.PickupDebris;
+import io.piotrjastrzebski.sfg.game.objects.TutorialLabel;
 import io.piotrjastrzebski.sfg.game.objects.obstacles.Obstacle;
 import io.piotrjastrzebski.sfg.game.objects.obstacles.Part;
+import io.piotrjastrzebski.sfg.game.objects.obstacles.Wall;
+import io.piotrjastrzebski.sfg.game.objects.obstacles.endpoints.Hammer;
+import io.piotrjastrzebski.sfg.game.objects.obstacles.endpoints.Moving;
+import io.piotrjastrzebski.sfg.game.objects.obstacles.endpoints.Spike;
 import io.piotrjastrzebski.sfg.screen.GameScreen;
 import io.piotrjastrzebski.sfg.utils.Config;
 import io.piotrjastrzebski.sfg.utils.Locator;
 import io.piotrjastrzebski.sfg.utils.Range;
+import io.piotrjastrzebski.sfg.utils.Settings;
 import io.piotrjastrzebski.sfg.utils.Utils;
-import io.piotrjastrzebski.sfg.utils.pools.CeilingPool;
-import io.piotrjastrzebski.sfg.utils.pools.GroundPool;
-import io.piotrjastrzebski.sfg.utils.pools.ObstaclePool;
-import io.piotrjastrzebski.sfg.utils.pools.PickupPool;
-import io.piotrjastrzebski.sfg.utils.pools.PoolUtils;
-import io.piotrjastrzebski.sfg.utils.pools.CeilingPool.PooledCeiling;
-import io.piotrjastrzebski.sfg.utils.pools.GroundPool.PooledGround;
-import io.piotrjastrzebski.sfg.utils.pools.ObstaclePool.PooledObstacle;
-import io.piotrjastrzebski.sfg.utils.pools.PickupPool.PooledPickup;
-import io.piotrjastrzebski.sfg.utils.pools.WallPool.PooledWall;
-import io.piotrjastrzebski.sfg.utils.pools.WallPool;
+import io.piotrjastrzebski.sfg.utils.PoolUtils;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.Pools;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.esotericsoftware.spine.SkeletonRenderer;
 
@@ -50,42 +52,39 @@ public class GameWorld {
     private final float PICKUP_SPAWN_CHANGE;
     private final float BOOST_REFILL_TIME;
     private final Range<Float> OBSTACLE_GAP;
-	private GroundPool groundPool;
-	private Array<PooledGround> ground;
-	private CeilingPool ceilingPool;
-	private Array<PooledCeiling> ceilings;
-	private ObstaclePool obstaclePool;
-	private Array<PooledObstacle> obstacles;
-	private PickupPool pickupPool;
-	private Array<PooledPickup> pickups;
-    private WallPool wallPool;
-    private Array<PooledWall> walls;
+    private final Settings settings;
+    private Array<Ground> ground;
+	private Array<Ceiling> ceilings;
+	private Array<Obstacle> obstacles;
+	private Array<Pickup> pickups;
+    private Array<Wall> walls;
+    private Array<PickupDebris> pickupDebris;
+    private Array<TutorialLabel> tutorialLabels;
+
+    private float lastCleanup;
 	
-	private float lastCleanup;
-	
-	private float widthOffset;
 	private int pickupDelay;
-	private Range<Float> obstRange;
-	private EventLoop events;
+    private Range<Float> obstRange;
+    private EventLoop events;
     private float worldWidth;
     private float worldHeight;
+    private float widthOffset;
     private int obstSinceLastBoost;
+    private float pickupLabelOffset;
 
     //TODO split the class or something
 	public GameWorld(){
+        settings = Locator.getSettings();
         events = Locator.getEvents();
         final Config config = Locator.getConfig();
         obstRange = config.getObstacleDistance();
-        groundPool = new GroundPool();
-        ground = new Array<PooledGround>();
-        ceilingPool = new CeilingPool();
-        ceilings = new Array<PooledCeiling>();
-        obstaclePool = new ObstaclePool();
-        obstacles = new Array<PooledObstacle>();
-        pickupPool = new PickupPool();
-        pickups = new Array<PooledPickup>();
-        wallPool = new WallPool(config.getObstacleGapSize().max);
-        walls = new Array<PooledWall>();
+        ground = new Array<Ground>();
+        ceilings = new Array<Ceiling>();
+        obstacles = new Array<Obstacle>();
+        pickups = new Array<Pickup>();
+        walls = new Array<Wall>();
+        pickupDebris = new Array<PickupDebris>();
+        tutorialLabels = new Array<TutorialLabel>();
 
         worldWidth = GameScreen.VIEWPORT_WIDTH;
         worldHeight = GameScreen.VIEWPORT_HEIGHT;
@@ -108,6 +107,8 @@ public class GameWorld {
 		PoolUtils.reset(obstacles);
 		PoolUtils.reset(pickups);
 		PoolUtils.reset(walls);
+		PoolUtils.reset(pickupDebris);
+		PoolUtils.reset(tutorialLabels);
 		lastCleanup = 0;
         pickupDelay = 0;
         obstSinceLastBoost = 0;
@@ -123,6 +124,8 @@ public class GameWorld {
 		PoolUtils.clean(obstacles, outside);
 		PoolUtils.clean(pickups, outside);
 		PoolUtils.clean(walls, outside);
+		PoolUtils.clean(pickupDebris, outside);
+		PoolUtils.clean(tutorialLabels, outside);
 	}
 	
 	/**
@@ -139,18 +142,19 @@ public class GameWorld {
 
         final Obstacle o = obstacles.get(obstacles.size - 1);
         float lastX = o.getX();
+        float lastY = o.getY();
 
 		if (lastX <= obstacleRight){
-			populateNext(lastX, o.getTopY(), o.getBotY());
+			populateNext(lastX, lastY, o.getTopY(), o.getBotY());
         }
 	}
 
     private final static float MIN_Y = 5;
     private final static float MAX_Y = 31;
+    private final static float MAX_DIFF = 8;
 
 	private void populateInit(float lastX){
-		final PooledObstacle o = obstaclePool.obtain();
-        o.updateViewPort(worldWidth, worldHeight);
+		final Obstacle o = obtainObstacle();
         // first one biggest possible gap
         float gap = OBSTACLE_GAP.max;
         // first one in middle
@@ -158,15 +162,15 @@ public class GameWorld {
         float botY = centerY - gap*0.5f;
         float topY = centerY + gap*0.5f;
 
+        o.initType(Part.Type.STATIC, Part.Type.STATIC);
         // 0.5 so its not flush with ground / ceiling
-		o.init(lastX, botY + 0.5f, topY - 0.5f);
+        o.init(lastX, botY + 0.5f, topY - 0.5f);
         obstacles.add(o);
 
 		// ground and ceiling going behind
 		for (int i = 1; i <= 5; i++) {
-			final PooledGround g = groundPool.obtain();
+			final Ground g = obtainGround();
 			// show support on last ground panel
-            g.updateViewPort(worldWidth, worldHeight);
 			g.init(lastX-i*15-3, MIN_Y,
 					18,
                     false,
@@ -174,8 +178,7 @@ public class GameWorld {
             );
 			ground.add(g);
 			
-			final PooledCeiling c = ceilingPool.obtain();
-            c.updateViewPort(worldWidth, worldHeight);
+			final Ceiling c = obtainCeiling();
             // +6 above top of the screen
 			c.init(lastX-i*15-3, MAX_Y+6,
 					18,
@@ -185,26 +188,34 @@ public class GameWorld {
 		}
 	}
 	
-	private void populateNext(float lastX, float lastTopY, float lastBotY){
+	private void populateNext(float lastX, float lastY, float lastTopY, float lastBotY){
         pickupDelay++;
         float distance = Utils.randomRange(obstRange);
 
-		final PooledObstacle o = obstaclePool.obtain();
-        o.updateViewPort(worldWidth, worldHeight);
+		final Obstacle o = obtainObstacle();
+        obstacles.add(o);
         float gap = Utils.randomRange(OBSTACLE_GAP);
+        if (o.getType() == Part.Type.MOVING){
+            // slightly more than min gap size
+            gap += 13;
+        }
+        float halfGap = gap*0.5f;
+        float centerY = MathUtils.round(MathUtils.random(MIN_Y+halfGap, MAX_Y-halfGap));
 
-        float centerY = MathUtils.round(MathUtils.random(MIN_Y+gap*0.5f, MAX_Y-gap*0.5f));
-        float botY = centerY-gap*0.5f;
-        float topY = centerY+gap*0.5f;
+        centerY = MathUtils.clamp(centerY, lastY-MAX_DIFF, lastY+MAX_DIFF);
+        float botY = Math.max(centerY-halfGap, MIN_Y);
+        float topY = Math.min(centerY+halfGap, MAX_Y);
         // 0.5 so its not flush with ground / ceiling
         o.init(lastX+distance, botY + 0.5f, topY - 0.5f);
-        obstacles.add(o);
 
+        // moving obstacles needs more vertical space
         float groundMaxY = Math.min(lastBotY, botY);
         float groundY = MathUtils.round(MathUtils.random(MIN_Y, groundMaxY));
 
-		final PooledGround g = groundPool.obtain();
-        g.updateViewPort(worldWidth, worldHeight);
+        float ceilingMinY = Math.max(lastTopY, topY);
+        float ceilingY = MathUtils.round(MathUtils.random(MAX_Y, ceilingMinY));
+
+		final Ground g = obtainGround();
 		g.init(lastX, groundY,
 				distance,
 				lastBotY - 2 >= groundY,
@@ -212,11 +223,7 @@ public class GameWorld {
         );
 		ground.add(g);
 
-        float ceilingMinY = Math.max(lastTopY, topY);
-        float ceilingY = MathUtils.round(MathUtils.random(MAX_Y, ceilingMinY));
-
-		final PooledCeiling c = ceilingPool.obtain();
-        c.updateViewPort(worldWidth, worldHeight);
+		final Ceiling c = obtainCeiling();
 		c.init(lastX, ceilingY,
 				distance,
 				lastTopY + 2 <= ceilingY,
@@ -225,31 +232,31 @@ public class GameWorld {
 		ceilings.add(c);
 
         // wait at least one obstacle per BOOST_REFILL_TIME and 25% chance after that
-        if (obstSinceLastBoost > BOOST_REFILL_TIME && MathUtils.random() > 0.5f) {
+        // moving doesnt work here
+        if (obstSinceLastBoost > BOOST_REFILL_TIME && MathUtils.random() > 0.5f && o.getType() != Part.Type.MOVING) {
             obstSinceLastBoost = 0;
-            // 50/50 for either triple obstacle or wall
-            if (MathUtils.randomBoolean() && o.getBotType() == Part.Type.STATIC) {
+            // either triple obstacle or wall i static bottom
+            if (o.getBotType() == Part.Type.STATIC) {
                 // create a wall for the player to destroy with boost
-                final PooledWall w = wallPool.obtain();
+                final Wall w = obtainWall();
                 w.init(lastX + distance, botY, gap);
                 walls.add(w);
             } else {
                 // another 2 in a row for boost
                 o.disableScore();
 
-                PooledObstacle o2 = obstaclePool.obtain();
-                o2.updateViewPort(worldWidth, worldHeight);
-                o2.init(lastX + distance + 4, botY + 0.5f, topY - 0.5f, o.getBotType(), o.getTopType());
+                Obstacle o2 = obtainObstacle();
+                o2.initType(o.getBotType(), o.getTopType());
+                o2.init(lastX + distance + 4, botY + 0.5f, topY - 0.5f);
                 o2.disableScore();
                 obstacles.add(o2);
 
-                o2 = obstaclePool.obtain();
-                o2.updateViewPort(worldWidth, worldHeight);
-                o2.init(lastX + distance + 8, botY + 0.5f, topY - 0.5f, o.getBotType(), o.getTopType());
+                o2 = obtainObstacle();
+                o2.initType(o.getBotType(), o.getTopType());
+                o2.init(lastX + distance + 8, botY + 0.5f, topY - 0.5f);
                 obstacles.add(o2);
 
-                final PooledGround g2 = groundPool.obtain();
-                g2.updateViewPort(worldWidth, worldHeight);
+                final Ground g2 = obtainGround();
                 // 3x3 + 2
                 g2.init(lastX + distance - 1.5f, groundY,
                         10,
@@ -258,7 +265,7 @@ public class GameWorld {
                 );
                 ground.add(g2);
             }
-            events.queueEvent(EventType.SHOW_BOOST_TUT, o);
+            events.queueEvent(EventType.SHOW_BOOST_TUT, o.getPos());
         } else {
             obstSinceLastBoost += 1;
         }
@@ -266,15 +273,30 @@ public class GameWorld {
 		if (MathUtils.random() <= PICKUP_SPAWN_CHANGE && pickupDelay > PICKUP_SPAWN_DISTANCE){
 			// 3 for width of obstacles
 			final float pickupOffset = 5 + (int) (MathUtils.random()*(distance-10));
-			PooledPickup p = pickupPool.obtain();
+			final Pickup p = obtainPickup();
 			float y = MathUtils.random(groundY+2.5f, ceilingY-2.5f);
             p.init(lastX+pickupOffset, y);
 			pickups.add(p);
             pickupDelay = 0;
+            if (!settings.getPickupTutShowed(p.getType())) {
+                final TutorialLabel label = Pools.obtain(TutorialLabel.class);
+                label.init(p);
+                tutorialLabels.add(label);
+                settings.setPickupTutShowed(p.getType());
+            }
 		}
 	}
-	
-	public void update(float delta, float camX){
+
+    public void fixedUpdate(){
+        for (final Pickup p : pickups) {
+            p.fixedUpdate();
+        }
+        for (int i = 0; i < pickupDebris.size; i++) {
+            pickupDebris.get(i).fixedUpdate();
+        }
+    }
+
+	public void variableUpdate(float delta, float alpha, float camX){
 		cleanup(camX);
 		populate(camX);
 		
@@ -290,12 +312,25 @@ public class GameWorld {
         for (int i = 0; i < walls.size; i++) {
             walls.get(i).update(delta);
         }
-        for (final PooledPickup p : pickups) {
-            p.update(delta);
+        for (int i = 0; i < pickupDebris.size; i++) {
+            pickupDebris.get(i).variableUpdate(delta, alpha);
+        }
+        for (final Pickup p : pickups) {
+            p.variableUpdate(delta, alpha);
             if (p.isExploded()) {
-                events.queueEvent(EventType.SPAWN_EXPLOSION, p.getPos());
-                p.free();
+                final PickupDebris debris = obtainPickupDebris();
+                debris.init(p.getPos());
+                pickupDebris.add(debris);
+                events.queueEvent(EventType.SPAWN_EXPLOSION, Pools.obtain(Vector2.class).set(p.getPos()));
+                Pools.free(p);
                 pickups.removeValue(p, true);
+            }
+        }
+        float outside = camX + pickupLabelOffset;
+        for (TutorialLabel label:tutorialLabels) {
+            label.variableUpdate(delta, alpha);
+            if (label.getPos().x < outside){
+                label.show();
             }
         }
 	}
@@ -310,18 +345,24 @@ public class GameWorld {
 		for (int i = 0; i < obstacles.size; i++) {
 			obstacles.get(i).draw(batch, skeletonRenderer);
 		}
+        for (int i = 0; i < tutorialLabels.size; i++) {
+            tutorialLabels.get(i).draw(batch);
+        }
 		for (int i = 0; i < pickups.size; i++) {
 			pickups.get(i).draw(batch, skeletonRenderer);
 		}
         for (int i = 0; i < walls.size; i++) {
             walls.get(i).draw(batch);
         }
+        for (int i = 0; i < pickupDebris.size; i++) {
+            pickupDebris.get(i).draw(batch);
+        }
 	}
 
 	public void updateViewport(ExtendViewport gameViewPort) {
         worldWidth = gameViewPort.getWorldWidth();
         worldHeight = gameViewPort.getWorldHeight();
-
+        pickupLabelOffset = worldWidth/2-3;
 		widthOffset = Math.max(
                 worldWidth/2,
                 worldHeight/2
@@ -337,4 +378,52 @@ public class GameWorld {
             obstacles.get(i).updateViewPort(worldWidth, worldHeight);
         }
 	}
+
+    public void dispose() {
+        // clear the pools
+        PoolUtils.dispose(Ground.class, ground);
+        PoolUtils.dispose(Ceiling.class, ceilings);
+        PoolUtils.dispose(Obstacle.class, obstacles);
+        PoolUtils.dispose(Pickup.class, pickups);
+        PoolUtils.dispose(Wall.class, walls);
+        PoolUtils.dispose(PickupDebris.class, pickupDebris);
+        PoolUtils.dispose(TutorialLabel.class, tutorialLabels);
+
+        // pools from obstacles
+        PoolUtils.dispose(Spike.class);
+        PoolUtils.dispose(Hammer.class);
+        PoolUtils.dispose(Moving.class);
+    }
+
+    private Obstacle obtainObstacle(){
+        final Obstacle o = Pools.obtain(Obstacle.class);
+        o.updateViewPort(worldWidth, worldHeight);
+        o.initType();
+        return o;
+    }
+
+    private Ground obtainGround(){
+        final Ground g = Pools.obtain(Ground.class);
+        g.updateViewPort(worldWidth, worldHeight);
+        return g;
+    }
+
+    private Ceiling obtainCeiling(){
+        final Ceiling c= Pools.obtain(Ceiling.class);
+        c.updateViewPort(worldWidth, worldHeight);
+        return c;
+    }
+
+    private Wall obtainWall(){
+        return Pools.obtain(Wall.class);
+    }
+
+
+    private Pickup obtainPickup(){
+        return Pools.obtain(Pickup.class);
+    }
+
+    private PickupDebris obtainPickupDebris(){
+        return Pools.obtain(PickupDebris.class);
+    }
 }

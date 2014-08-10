@@ -19,9 +19,11 @@
 package io.piotrjastrzebski.sfg.game.objects;
 
 import io.piotrjastrzebski.sfg.game.objects.obstacles.SensorType;
+import io.piotrjastrzebski.sfg.utils.Assets;
 import io.piotrjastrzebski.sfg.utils.Collision;
 import io.piotrjastrzebski.sfg.utils.Config;
 import io.piotrjastrzebski.sfg.utils.Locator;
+import io.piotrjastrzebski.sfg.utils.Transform;
 import io.piotrjastrzebski.sfg.utils.Utils;
 import box2dLight.PointLight;
 
@@ -44,9 +46,9 @@ import com.esotericsoftware.spine.Skeleton;
 import com.esotericsoftware.spine.SkeletonData;
 import com.esotericsoftware.spine.SkeletonRenderer;
 
-public class Pickup implements Poolable, Position {
+public class Pickup implements Poolable, Position, FixedUpdatable, VariableUpdatable {
     public enum Type {
-		LIVES, BOOST
+		LIVES, BOOST, SHIELD, TOXIC
 	}
 	private Body body;
     private boolean done = false;
@@ -64,11 +66,13 @@ public class Pickup implements Poolable, Position {
 	private Animation idleEmptyAnim;
 	private AnimationState pickupAnimState;
 	private PointLight pointLight;
+    private Transform transform;
 
 	public Pickup() {
 		this.config = Locator.getConfig();
 		this.world = Locator.getWorld();
-		
+		transform = new Transform();
+
 		pointLight = new PointLight(Locator.getRayHandler(), 8, Color.WHITE, 4, -100, -100);
 		pointLight.setXray(true);
 		// create bodies
@@ -91,28 +95,26 @@ public class Pickup implements Poolable, Position {
 		body.setUserData(this);
 		body.setGravityScale(0);
 
-        final SkeletonData skeletonData = Locator.getAssets().getPickupSkeletonData();
+        final Assets assets = Locator.getAssets();
+        final SkeletonData skeletonData = assets.getSkeletonData(Assets.Animations.PICKUP);
         pickupSkeleton = new Skeleton(skeletonData);
-
 		idleAnim = skeletonData.findAnimation("idle");
 		pickupAnim = skeletonData.findAnimation("pickup");
 		idleEmptyAnim = skeletonData.findAnimation("idle_empty");
-        final AnimationStateData stateData = Locator.getAssets().getPickupAnimationData();
+
+        final AnimationStateData stateData = assets.getAnimationStateData(Assets.Animations.PICKUP);
         stateData.setMix(pickupAnim, idleEmptyAnim, 1);
 		pickupAnimState = new AnimationState(stateData);
 		body.setActive(false);
 	}
 
 	public void init(float x, float y){
-		if (MathUtils.randomBoolean()){
-			init(Type.BOOST, x, y);
-		} else {
-			init(Type.LIVES, x, y);
-		}
+        init(Type.values()[MathUtils.random(Type.values().length-1)], x, y);
 	}
 
 	public void init(Type type, float x, float y){
 		this.type = type;
+        transform.init(x, y);
         init = true;
         isExploded = false;
 		body.setActive(true);
@@ -122,16 +124,26 @@ public class Pickup implements Poolable, Position {
 
 		f.setUserData(SensorType.PICKUP);
 		switch (type) {
-		case BOOST:
-			value = Utils.randomIntRange(config.getPickupBoost());
-			pickupSkeleton.setSkin("boost");
-			pointLight.setColor(1, 0.8f, 0.2f, 1);
-			break;
-		case LIVES:
-			value = Utils.randomIntRange(config.getPickupLive());
-			pickupSkeleton.setSkin("live");
-			pointLight.setColor(1, 0.3f, 0.0f, 1);
-			break;
+            case BOOST:
+                value = Utils.randomIntRange(config.getPickupBoost());
+                pickupSkeleton.setSkin("boost");
+                pointLight.setColor(1, 0.8f, 0.2f, 1);
+                break;
+            case LIVES:
+                value = Utils.randomIntRange(config.getPickupLive());
+                pickupSkeleton.setSkin("live");
+                pointLight.setColor(1, 0.3f, 0.0f, 1);
+                break;
+            case SHIELD:
+                value = Utils.randomIntRange(config.getPickupShield());
+                pickupSkeleton.setSkin("shield");
+                pointLight.setColor(0.8f, 0.8f, 0.8f, 1);
+                break;
+            case TOXIC:
+                value = Utils.randomIntRange(config.getPickupToxic());
+                pickupSkeleton.setSkin("toxic");
+                pointLight.setColor(0.3f, 0.8f, 0.1f, 1);
+                break;
 		default:
 			break;
 		}
@@ -165,19 +177,29 @@ public class Pickup implements Poolable, Position {
         pointLight.setPosition(-100, -100);
 
 	}
-	
-	public void update(float delta){
+
+    @Override
+    public void fixedUpdate() {
         if (!init)
             return;
-		final Vector2 pos = body.getPosition();
-		pickupSkeleton.setPosition(pos.x-0.1f, pos.y);
-		pickupAnimState.update(delta);
-		pickupAnimState.apply(pickupSkeleton);
-		pickupSkeleton.updateWorldTransform();
-		
-		pointLight.setPosition(pos.x, pos.y);
-	}
-	
+        transform.set(body.getPosition());
+    }
+
+    @Override
+    public void variableUpdate(float delta, float alpha) {
+        if (!init)
+            return;
+        float lerpX = transform.getLerpX(alpha);
+        float lerpY = transform.getLerpY(alpha);
+
+        pickupSkeleton.setPosition(lerpX-0.1f, lerpY);
+        pickupAnimState.update(delta);
+        pickupAnimState.apply(pickupSkeleton);
+        pickupSkeleton.updateWorldTransform();
+
+        pointLight.setPosition(lerpX, lerpY);
+    }
+
 	public void draw(Batch batch, SkeletonRenderer skeletonRenderer){
         if (!init)
             return;
@@ -205,4 +227,8 @@ public class Pickup implements Poolable, Position {
 	public boolean isExploded(){
 		return isExploded;
 	}
+
+    public Transform getTransform() {
+        return transform;
+    }
 }

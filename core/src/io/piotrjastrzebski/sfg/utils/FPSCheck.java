@@ -29,7 +29,7 @@ import io.piotrjastrzebski.sfg.screen.GameScreen;
 
 public class FPSCheck {
     // lights will be disabled if fps is below this number
-    public final static int MIN_FPS = 50;
+    public final static int MIN_FPS = 25;
     public final static int FPS_CHECK_DELAY = 5; // in sec
     private final Assets assets;
     private final Stage stage;

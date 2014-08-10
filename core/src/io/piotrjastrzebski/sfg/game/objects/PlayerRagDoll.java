@@ -38,8 +38,9 @@ import io.piotrjastrzebski.sfg.screen.GameScreen;
 import io.piotrjastrzebski.sfg.utils.Assets;
 import io.piotrjastrzebski.sfg.utils.Collision;
 import io.piotrjastrzebski.sfg.utils.Locator;
+import io.piotrjastrzebski.sfg.utils.Transform;
 
-public class PlayerRagDoll {
+public class PlayerRagDoll implements FixedUpdatable, VariableUpdatable {
     // ids for quick access
     private final static int HAT_ID = 0;
     private final static int TORSO_ID = 2;
@@ -49,27 +50,27 @@ public class PlayerRagDoll {
     private final static int LEG_LOWER_BACK_ID = 7;
     private final static int CAPE_ID = 11;
 
-    private final String[] SLOT_NAMES = {
+    private final static String[] SLOT_NAMES = {
             "hat_skin", "launcher", "torso", "head",
             "arm_upper_back", "arm_upper_front", "arm_lower", "arm_lower2",
             "leg_upper_back", "leg_upper_front", "leg_lower_back", "leg_lower_front",
             "cape_skin"
     };
-    private final String[] REGION_NAMES = {
+    private final static String[] REGION_NAMES = {
             "hat", "launcher", "broken_torso", "broken_head",
             "broken_arm_upper_back", "broken_arm_upper_front", "broken_arm_lower", "broken_arm_lower",
             "broken_leg_upper_back", "broken_leg_upper_front", "broken_leg_lower_back", "broken_leg_lower_front",
             "broken_cape"
     };
     // width of the body also offset for drawing
-    private final float[] WIDTHS = {
+    private final static float[] WIDTHS = {
             0.2f, 0.3f, 0.4f, 0.2f,
             0.1f, 0.1f, 0.1f, 0.1f,
             0.15f, 0.15f, 0.15f, 0.15f,
             0.2f
     };
     // height of the body also offset for drawing
-    private final float[] HEIGHTS = {
+    private final static float[] HEIGHTS = {
             0.2f, 1.1f, 0.55f, 0.2f,
             0.3f, 0.3f, 0.4f, 0.4f,
             0.45f, 0.45f, 0.4f, 0.4f,
@@ -119,6 +120,8 @@ public class PlayerRagDoll {
         fixtureDef.restitution = 0.25f;
         fixtureDef.filter.categoryBits = Collision.BODY_PART;
         fixtureDef.filter.maskBits = Collision.MASK_BODY_PART;
+        // without this bodies are actually lower than expected when driven by animation
+        body.setGravityScale(0);
         body.createFixture(fixtureDef);
         // Clean up
         rect.dispose();
@@ -148,7 +151,7 @@ public class PlayerRagDoll {
             updateSkin(skin);
         }
         for (int i = 0; i < parts.size; i++) {
-            parts.get(i).update(x, y);
+            parts.get(i).init(x, y);
         }
     }
 
@@ -175,15 +178,6 @@ public class PlayerRagDoll {
         }
     }
 
-
-    public void update(float delta){
-        final float x = skeleton.getX();
-        final float y = skeleton.getY();
-        for (int i = 0; i < parts.size; i++) {
-            parts.get(i).update(x, y);
-        }
-    }
-
     public void draw(Batch batch){
         if (!isAttached){
             for (int i = 0; i < parts.size; i++) {
@@ -192,12 +186,29 @@ public class PlayerRagDoll {
         }
     }
 
-    public class Part implements Position {
+    @Override
+    public void fixedUpdate() {
+        for (int i = 0; i < parts.size; i++) {
+            parts.get(i).fixedUpdate();
+        }
+    }
+
+    @Override
+    public void variableUpdate(float delta, float alpha) {
+        final float x = skeleton.getX();
+        final float y = skeleton.getY();
+        for (int i = 0; i < parts.size; i++) {
+            parts.get(i).variableUpdate(x, y, alpha);
+        }
+    }
+
+    public class Part implements Position, FixedUpdatable {
         final private Body body;
         final private Bone bone;
         final private Sprite sprite;
         final private float xOffset;
         final private float yOffset;
+        final private Transform transform;
 
         public Part(Body body, Slot slot, Sprite sprite, float xOffset, float yOffset){
             bone = slot.getBone();
@@ -205,7 +216,16 @@ public class PlayerRagDoll {
             this.xOffset = xOffset;
             this.yOffset = yOffset;
             this.body = body;
+            transform = new Transform();
             body.setUserData(this);
+        }
+
+        public void init(float skelX, float skelY){
+            body.setGravityScale(0);
+            final float x = skelX + bone.getWorldX();
+            final float y = skelY + bone.getWorldY();
+            final float rotation = bone.getWorldRotation() * MathUtils.degreesToRadians;
+            body.setTransform(x, y, rotation);
         }
 
         public void setRegion(TextureRegion region){
@@ -213,6 +233,7 @@ public class PlayerRagDoll {
         }
 
         public void detach(){
+            body.setGravityScale(1);
             // explode the part in random direction
             // reset velocities as they spaz out due to transforms
             body.setLinearVelocity(0, 0);
@@ -222,24 +243,8 @@ public class PlayerRagDoll {
             body.setAngularVelocity(0);
             body.applyAngularImpulse(MathUtils.random(-0.4f, 0.4f), true);
 
-            final Vector2 pos = body.getPosition();
-            sprite.setPosition(pos.x-xOffset, pos.y-yOffset);
-            sprite.setRotation(body.getAngle() * MathUtils.radiansToDegrees);
-        }
-
-        public void update(float skelX, float skelY){
-            if (isAttached){
-                // this works for parts with bones near the center of the sprite
-                // TODO fix position and rotation of body, so it centers in bones attachment position
-                final float x = skelX + bone.getWorldX();
-                final float y = skelY + bone.getWorldY();
-                final float rotation = bone.getWorldRotation() * MathUtils.degreesToRadians;
-                body.setTransform(x, y, rotation);
-            } else {
-                final Vector2 pos = body.getPosition();
-                sprite.setPosition(pos.x-xOffset, pos.y-yOffset);
-                sprite.setRotation(body.getAngle() * MathUtils.radiansToDegrees);
-            }
+            transform.init(body.getPosition(), body.getAngle()*MathUtils.radiansToDegrees);
+            variableUpdate(0, 0, 1);
         }
 
         public void draw(Batch batch){
@@ -249,6 +254,31 @@ public class PlayerRagDoll {
         @Override
         public Vector2 getPos() {
             return body.getPosition();
+        }
+
+        @Override
+        public void fixedUpdate() {
+            if (!isAttached){
+                transform.set(body.getPosition(), body.getAngle() * MathUtils.radiansToDegrees);
+            }
+        }
+
+        public void variableUpdate(float skelX, float skelY, float alpha) {
+            if (isAttached){
+                // this works for parts with bones near the center of the sprite
+                // TODO fix position and rotation of body, so it centers in bones attachment position
+                final float x = skelX + bone.getWorldX();
+                final float y = skelY + bone.getWorldY();
+                final float rotation = bone.getWorldRotation() * MathUtils.degreesToRadians;
+                body.setTransform(x, y, rotation);
+            } else {
+                float lerpAngle = transform.getLerpAngle(alpha);
+                float lerpX = transform.getLerpX(alpha);
+                float lerpY = transform.getLerpY(alpha);
+
+                sprite.setPosition(lerpX-xOffset, lerpY-yOffset);
+                sprite.setRotation(lerpAngle);
+            }
         }
     }
 }

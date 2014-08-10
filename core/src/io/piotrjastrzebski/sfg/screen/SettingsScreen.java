@@ -236,8 +236,7 @@ public class SettingsScreen extends DefaultScreen {
         restore.addListener(new ClickListener(){
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                settings.setTutBoostShowed(false);
-                settings.setTutJumpShowed(false);
+                settings.resetTutorials();
                 actionResolver.toast(assets.getText(Assets.RESET_TUTORIALS_TOAST));
                 playButtonPressSound();
             }

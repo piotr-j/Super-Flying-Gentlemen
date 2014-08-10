@@ -22,7 +22,6 @@ import io.piotrjastrzebski.sfg.screen.GameScreen;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetManager;
-import com.badlogic.gdx.assets.loaders.I18NBundleLoader;
 import com.badlogic.gdx.assets.loaders.ParticleEffectLoader;
 import com.badlogic.gdx.assets.loaders.SkinLoader;
 import com.badlogic.gdx.graphics.g2d.ParticleEffect;
@@ -36,8 +35,6 @@ import com.badlogic.gdx.utils.ObjectMap;
 import com.esotericsoftware.spine.AnimationStateData;
 import com.esotericsoftware.spine.SkeletonData;
 import com.esotericsoftware.spine.SkeletonJson;
-
-import java.util.Locale;
 
 public class Assets {
     /** Constants for i18n */
@@ -94,6 +91,7 @@ public class Assets {
     private final static String SKIN = "data/skin.json";
     private final static String P_EXPLOSION = "data/particles/explosion.p";
     private final static String P_BLOOD = "data/particles/blood.p";
+    private final static String P_TOXIC = "data/particles/toxic.p";
 
     private final static String I18N  = "data/i18n/SFGBundle";
 
@@ -105,24 +103,18 @@ public class Assets {
     private TextureAtlas particleAtlas;
     private TextureAtlas uiAtlas;
 
-    private ParticleEffectPool explosionParticles;
-    private ParticleEffectPool bloodParticles;
+    public static enum Particles {
+        EXPLOSION, BLOOD, TOXIC
+    }
+    public static enum Animations {
+        PLAYER, OBST_SPIKE, OBST_HAMMER, OBST_MOVING, PICKUP, TUT_JUMP, TUT_BOOST
+    }
 
-    private SkeletonData playerSkeletonData;
-    private SkeletonData spikeSkeletonData;
-    private SkeletonData hammerSkeletonData;
-    private SkeletonData pickupSkeletonData;
-    private SkeletonData tutJumpSkeletonData;
-    private SkeletonData tutBoostSkeletonData;
+    private ObjectMap<Particles, ParticleEffectPool> particleEffects;
+    private ObjectMap<Animations, SkeletonData> skeletons;
+    private ObjectMap<Animations, AnimationStateData> animationStates;
 
-    private AnimationStateData playerAnimationData;
-    private AnimationStateData spikeAnimationData;
-    private AnimationStateData hammerAnimationData;
-    private AnimationStateData pickupAnimationData;
-    private AnimationStateData tutJumpAnimationData;
-    private AnimationStateData tutBoostAnimationData;
-
-	private ObjectMap<String, TextureRegion> gameRegions;
+    private ObjectMap<String, TextureRegion> gameRegions;
 	private ObjectMap<String, TextureRegion> uiRegions;
 
     private SoundManager soundManager;
@@ -143,6 +135,7 @@ public class Assets {
         pep.atlasFile = PARTICLE_ATLAS;
         assetManager.load(P_EXPLOSION, ParticleEffect.class, pep);
         assetManager.load(P_BLOOD, ParticleEffect.class, pep);
+        assetManager.load(P_TOXIC, ParticleEffect.class, pep);
         assetManager.load(I18N, I18NBundle.class);
 
         soundManager = new SoundManager(assetManager);
@@ -164,41 +157,81 @@ public class Assets {
         skin = assetManager.get(SKIN, Skin.class);
 
         skin.getFont("default-font").setMarkupEnabled(true);
-        explosionParticles = new ParticleEffectPool(
+        final ParticleEffectPool explosionParticles = new ParticleEffectPool(
                 assetManager.get(P_EXPLOSION, ParticleEffect.class), 16, Integer.MAX_VALUE);
-        bloodParticles = new ParticleEffectPool(
+        final ParticleEffectPool bloodParticles = new ParticleEffectPool(
                 assetManager.get(P_BLOOD, ParticleEffect.class), 8, Integer.MAX_VALUE);
+        final ParticleEffectPool toxicParticles = new ParticleEffectPool(
+                assetManager.get(P_TOXIC, ParticleEffect.class), 8, Integer.MAX_VALUE);
+        particleEffects = new ObjectMap<Particles, ParticleEffectPool>();
+        particleEffects.put(Particles.BLOOD, bloodParticles);
+        particleEffects.put(Particles.EXPLOSION, explosionParticles);
+        particleEffects.put(Particles.TOXIC, toxicParticles);
 
         bundle = assetManager.get(I18N, I18NBundle.class);
 
-		SkeletonJson json = new SkeletonJson(gameAtlas);
-		json.setScale(GameScreen.BOX2D_TO_PIXEL);
-		spikeSkeletonData = json.readSkeletonData(Gdx.files.internal("data/anim/obst_spike.json"));
-		spikeAnimationData = new AnimationStateData(spikeSkeletonData);
-		
-		hammerSkeletonData = json.readSkeletonData(Gdx.files.internal("data/anim/obst_hammer.json"));
-		hammerAnimationData = new AnimationStateData(hammerSkeletonData);
-		
-		pickupSkeletonData = json.readSkeletonData(Gdx.files.internal("data/anim/pickup.json"));
-		pickupAnimationData = new AnimationStateData(pickupSkeletonData);
-		
-		// we are lazy, just make the player a bit bigger
-		// maybe we will fix it later
-		json.setScale(GameScreen.BOX2D_TO_PIXEL*1.5f);
-		playerSkeletonData = json.readSkeletonData(Gdx.files.internal("data/anim/player.json"));
-		playerAnimationData = new AnimationStateData(playerSkeletonData);
-
-
-        json = new SkeletonJson(uiAtlas);
-        json.setScale(GameScreen.BOX2D_TO_PIXEL);
-        tutJumpSkeletonData = json.readSkeletonData(Gdx.files.internal("data/anim/jump_tutorial.json"));
-        tutJumpAnimationData = new AnimationStateData(tutJumpSkeletonData);
-
-        tutBoostSkeletonData = json.readSkeletonData(Gdx.files.internal("data/anim/boost_tutorial.json"));
-        tutBoostAnimationData = new AnimationStateData(tutBoostSkeletonData);
+        loadGameAnimations();
+        loadUIAnimations();
 
         soundManager.finishLoading();
 	}
+
+    private void loadGameAnimations(){
+        skeletons = new ObjectMap<Animations, SkeletonData>();
+        animationStates = new ObjectMap<Animations, AnimationStateData>();
+
+        final SkeletonJson json = new SkeletonJson(gameAtlas);
+        json.setScale(GameScreen.BOX2D_TO_PIXEL);
+
+        final String[] animFiles = {
+                "data/anim/obst_spike.json",
+                "data/anim/obst_hammer.json",
+                "data/anim/obst_moving.json",
+                "data/anim/pickup.json"
+        };
+        final Animations[] animNames = {
+                Animations.OBST_SPIKE,
+                Animations.OBST_HAMMER,
+                Animations.OBST_MOVING,
+                Animations.PICKUP
+        };
+
+        for (int i = 0; i < animFiles.length; i++) {
+            final SkeletonData skeletonData = json.readSkeletonData(Gdx.files.internal(animFiles[i]));
+            final AnimationStateData animationData = new AnimationStateData(skeletonData);
+            skeletons.put(animNames[i], skeletonData);
+            animationStates.put(animNames[i], animationData);
+        }
+
+        // we are lazy, just make the player a bit bigger
+        // maybe we will fix it later
+        json.setScale(GameScreen.BOX2D_TO_PIXEL*1.5f);
+        final SkeletonData playerSkeletonData = json.readSkeletonData(Gdx.files.internal("data/anim/player.json"));
+        final AnimationStateData playerAnimationData = new AnimationStateData(playerSkeletonData);
+        skeletons.put(Animations.PLAYER, playerSkeletonData);
+        animationStates.put(Animations.PLAYER, playerAnimationData);
+    }
+
+    private void loadUIAnimations(){
+        final SkeletonJson json = new SkeletonJson(uiAtlas);
+        json.setScale(GameScreen.BOX2D_TO_PIXEL);
+
+        final String[] animTutFiles = {
+                "data/anim/jump_tutorial.json",
+                "data/anim/boost_tutorial.json"
+        };
+        final Animations[] animTutNames = {
+                Animations.TUT_JUMP,
+                Animations.TUT_BOOST
+        };
+
+        for (int i = 0; i < animTutFiles.length; i++) {
+            final SkeletonData skeletonData = json.readSkeletonData(Gdx.files.internal(animTutFiles[i]));
+            final AnimationStateData animationData = new AnimationStateData(skeletonData);
+            skeletons.put(animTutNames[i], skeletonData);
+            animationStates.put(animTutNames[i], animationData);
+        }
+    }
 	
 	public void dispose(){
 		skin.dispose();
@@ -249,64 +282,20 @@ public class Assets {
         return skin;
     }
 
-    public ParticleEffectPool getExplosionParticles() {
-        return explosionParticles;
+    public ParticleEffectPool getParticles(Particles particle){
+        return particleEffects.get(particle);
     }
 
-    public ParticleEffectPool getBloodParticles() {
-        return bloodParticles;
+    public SkeletonData getSkeletonData(Animations animation){
+        return skeletons.get(animation);
+    }
+
+    public AnimationStateData getAnimationStateData(Animations animation){
+        return animationStates.get(animation);
     }
 
     public SoundManager getSoundManager() {
         return soundManager;
-    }
-
-    public SkeletonData getPlayerSkeletonData() {
-        return playerSkeletonData;
-    }
-
-    public SkeletonData getSpikeSkeletonData() {
-        return spikeSkeletonData;
-    }
-
-    public SkeletonData getHammerSkeletonData() {
-        return hammerSkeletonData;
-    }
-
-    public SkeletonData getTutJumpSkeletonData() {
-        return tutJumpSkeletonData;
-    }
-
-    public SkeletonData getTutBoostSkeletonData() {
-        return tutBoostSkeletonData;
-    }
-
-    public SkeletonData getPickupSkeletonData() {
-        return pickupSkeletonData;
-    }
-
-    public AnimationStateData getPlayerAnimationData() {
-        return playerAnimationData;
-    }
-
-    public AnimationStateData getSpikeAnimationData() {
-        return spikeAnimationData;
-    }
-
-    public AnimationStateData getHammerAnimationData() {
-        return hammerAnimationData;
-    }
-
-    public AnimationStateData getPickupAnimationData() {
-        return pickupAnimationData;
-    }
-
-    public AnimationStateData getTutBoostAnimationData() {
-        return tutBoostAnimationData;
-    }
-
-    public AnimationStateData getTutJumpAnimationData() {
-        return tutJumpAnimationData;
     }
 
     public TextureAtlas getUiAtlas() {

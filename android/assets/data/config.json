@@ -54,7 +54,8 @@ baby:{
 		dash_mult: 40.0,
 		jump_impulse: 16.0,
 		linear_dampening: 0.1,
-		lives: 999
+		lives: 999,
+        shields: 9
 	},
 	obstacle:{
 		dst_range:{
@@ -67,7 +68,7 @@ baby:{
 		}
 	},
 	pickup:{
-	    spawn_chance: 1,
+	    spawn_chance: 0.8,
 	    spawn_distance: 0,
 		live_range:{
 			min: 1,
@@ -76,7 +77,15 @@ baby:{
 		boost_range:{
 			min:1,
 			max:5
-		}
+		},
+        shield_range:{
+            min:3,
+            max:9
+        },
+        toxic_range:{
+            min:1,
+            max:3
+        }
 	}
 },
 hard:{
@@ -94,7 +103,8 @@ hard:{
 		dash_mult: 40.0,
 		jump_impulse: 16.0,
 		linear_dampening: 0.1,
-		lives: 10
+		lives: 10,
+		shields: 3
 	},
 	obstacle:{
 		dst_range:{
@@ -108,7 +118,7 @@ hard:{
 	},
 	pickup:{
         spawn_chance: 0.5,
-        spawn_distance: 3,
+        spawn_distance: 2,
 		live_range:{
 			min: 1,
 		 	max: 3
@@ -116,7 +126,15 @@ hard:{
 		boost_range:{
 			min:1,
 			max:5
-		}
+		},
+        shield_range:{
+            min:1,
+            max:3
+        },
+        toxic_range:{
+            min:1,
+            max:1
+        }
 	}
 },
 very_hard:{
@@ -134,7 +152,8 @@ very_hard:{
 		dash_mult: 40.0,
 		jump_impulse: 16.0,
 		linear_dampening: 0.1,
-		lives: 3
+		lives: 3,
+        shields: 1
 	},
 	obstacle:{
 		dst_range:{
@@ -148,7 +167,7 @@ very_hard:{
 	},
 	pickup:{
 	    spawn_chance: 0.33,
-        spawn_distance: 3,
+        spawn_distance: 2,
 		live_range:{
 			min: 1,
 		 	max: 2
@@ -156,7 +175,15 @@ very_hard:{
 		boost_range:{
 			min:1,
 			max:3
-		}
+		},
+        shield_range:{
+            min:1,
+            max:2
+        },
+        toxic_range:{
+            min:1,
+            max:1
+        }
 	}
 },
 brutal:{
@@ -174,7 +201,8 @@ brutal:{
         dash_mult: 40.0,
         jump_impulse: 16.0,
         linear_dampening: 0.1,
-        lives: 1
+        lives: 1,
+        shields: 1
     },
     obstacle:{
         dst_range:{
@@ -187,7 +215,7 @@ brutal:{
         }
     },
     pickup:{
-        spawn_chance: 0.25,
+        spawn_chance: 0.5,
         spawn_distance: 3,
         live_range:{
             min: 1,
@@ -196,6 +224,14 @@ brutal:{
         boost_range:{
             min:1,
             max:2
+        },
+        shield_range:{
+            min:1,
+            max:1
+        },
+        toxic_range:{
+            min:1,
+            max:1
         }
     }
 }

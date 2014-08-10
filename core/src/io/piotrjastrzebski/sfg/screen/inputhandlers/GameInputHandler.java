@@ -30,10 +30,10 @@ public class GameInputHandler extends InputHandler<GameScreen> {
 	}
 
     @Override
-	public boolean tap(float x, float y, int count, int button) {
-		screen.handleTap();
-		return false;
-	}
+    public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+        screen.handleTap();
+        return false;
+    }
 
 	@Override
 	public boolean fling(float velocityX, float velocityY, int button) {

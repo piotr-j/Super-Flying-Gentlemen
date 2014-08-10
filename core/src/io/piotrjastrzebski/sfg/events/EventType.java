@@ -35,18 +35,20 @@ public class EventType {
     public static final int PLAYER_ALIVE = 19;
     public static final int PLAYER_BOOST_CHANGED = 20;
     public static final int PLAYER_SCORE_CHANGED = 21;
+    public static final int PLAYER_SHIELDS_CHANGED = 22;
 
     public static final int SPAWN_EXPLOSION = 30;
     public static final int SPAWN_BLOOD = 31;
+    public static final int SPAWN_TOXIC_CLOUD = 32;
 
     public static final int PLAY_MUSIC = 40;
     public static final int STOP_MUSIC = 41;
     public static final int TOGGLE_MUSIC = 42;
     public static final int PLAY_SOUND = 43;
+
     public static final int TOGGLE_SOUND = 44;
 
     public static final int SHOW_BOOST_TUT = 50;
-
     public final static int PICKUP_TOUCHED = 60;
     public final static int PICKUP_DESTROYED = 61;
 }

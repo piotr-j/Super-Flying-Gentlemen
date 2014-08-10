@@ -26,15 +26,18 @@ import io.piotrjastrzebski.sfg.utils.Locator;
 import io.piotrjastrzebski.sfg.utils.Settings;
 import io.piotrjastrzebski.sfg.utils.SoundManager;
 
+import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Game;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.FPSLogger;
 
 public class SFGApp extends Game {
-	public final static boolean DEBUG = true;
-	public final static boolean DEBUG_FPS = false;
-	// if debug draw of box2d is enabled
-	public final static boolean DEBUG_BOX2D = false;
+	public final static boolean DEBUG = false;
+	public final static boolean DEBUG_IAP = false;
+	public final static boolean DEBUG_GMS = false;
+    public final static boolean DEBUG_BOX2D = false;
+    public final static boolean DEBUG_FPS = false;
 	public final static String TAG = "SFG";
     public static final String PREFS = "SFG_PREFS";
     private PlayerStats playerStats;
@@ -58,6 +61,8 @@ public class SFGApp extends Game {
 	}
 
     public void init() {
+        if (!DEBUG)
+            Gdx.app.setLogLevel(Application.LOG_NONE);
         actionResolver.init();
         Locator.provideActionResolver(actionResolver);
         playerStats = new PlayerStats(actionResolver);
@@ -97,7 +102,7 @@ public class SFGApp extends Game {
 
     @Override
     public void setScreen(Screen screen) {
-        Screen prev = getScreen();
+        final Screen prev = getScreen();
         super.setScreen(screen);
         if (prev != null)
             prev.dispose();

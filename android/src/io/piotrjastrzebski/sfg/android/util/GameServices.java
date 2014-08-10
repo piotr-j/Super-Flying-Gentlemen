@@ -71,6 +71,7 @@ public class GameServices implements GameHelper.GameHelperListener {
     private Tracker gameTracker;
     private Preferences preferences;
     private ObjectMap<PlayerStats.Name, Boolean> achievements;
+    private boolean isConnecting;
 
     public GameServices(AndroidLauncher activity, AndroidActionResolver actionResolver){
         this.activity = activity;
@@ -84,7 +85,8 @@ public class GameServices implements GameHelper.GameHelperListener {
             public void run() {
                 gh = new GameHelper(activity, GameHelper.CLIENT_GAMES);
                 gh.setup(GameServices.this);
-                gh.enableDebugLog(true);
+                if(SFGApp.DEBUG_GMS)
+                    gh.enableDebugLog(true);
                 gh.showFailureDialog();
                 GoogleAnalytics analytics = GoogleAnalytics.getInstance(activity);
                 gameTracker = analytics.newTracker(R.xml.sfg_tracker);
@@ -92,7 +94,10 @@ public class GameServices implements GameHelper.GameHelperListener {
                 // initial game start
                 sendScreenView("Splash Screen");
                 preferences = Gdx.app.getPreferences(SFGApp.PREFS);
-                gh.setConnectOnStart(preferences.getBoolean(AUTO_SIGN_IN, false));
+                boolean autoConnect = preferences.getBoolean(AUTO_SIGN_IN, false);
+                gh.setConnectOnStart(autoConnect);
+                if (autoConnect)
+                    isConnecting = true;
                 gh.onStart(activity);
             }
         });
@@ -362,9 +367,9 @@ public class GameServices implements GameHelper.GameHelperListener {
 
     public void signIn() {
         try {
+            isConnecting = true;
             activity.runOnUiThread(new Runnable() {
                 public void run() {
-                    Gdx.app.log("SFG", "sign in start");
                     gh.beginUserInitiatedSignIn();
                 }
             });
@@ -390,11 +395,13 @@ public class GameServices implements GameHelper.GameHelperListener {
 
     @Override
     public void onSignInFailed() {
+        isConnecting = false;
         actionResolver.sendEvent(ActionListener.SIGN_IN_FAILED);
     }
 
     @Override
     public void onSignInSucceeded() {
+        isConnecting = false;
         actionResolver.sendEvent(ActionListener.SIGN_IN);
         preferences.putBoolean(AUTO_SIGN_IN, true);
         preferences.flush();
@@ -407,7 +414,9 @@ public class GameServices implements GameHelper.GameHelperListener {
     }
 
     public void onStop(){
-        if (gh != null)
+        // calling onStop while we are connecting causes infinite login loop
+        // if there is no network
+        if (gh != null && !isConnecting)
             gh.onStop();
     }
 }

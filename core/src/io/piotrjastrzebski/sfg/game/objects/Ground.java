@@ -30,7 +30,7 @@ import io.piotrjastrzebski.sfg.utils.Assets;
 import io.piotrjastrzebski.sfg.utils.Box2dUtils;
 import io.piotrjastrzebski.sfg.utils.Locator;
 
-public class Ground implements Poolable, Position {
+public class Ground implements Poolable, Position, ViewPortUpdate {
 	private static final String[] floor_names = {
 		"floor_v1", "floor_v2", "floor_v3"
 	};
@@ -141,6 +141,7 @@ public class Ground implements Poolable, Position {
 		}
 	}
 
+    @Override
     public void updateViewPort(float width, float height){
         viewHalfWidth = width*0.5f;
         viewHalfHeight = height*0.5f;

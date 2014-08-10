@@ -44,7 +44,8 @@ public class Wall implements Position, Pool.Poolable{
 
     private Array<WallPart> parts;
 
-    public Wall(float maxHeight) {
+    public Wall() {
+        float maxHeight = Locator.getConfig().getObstacleGapSize().max;
         pos = new Vector2();
         parts = new Array<WallPart>();
         final World world = Locator.getWorld();
