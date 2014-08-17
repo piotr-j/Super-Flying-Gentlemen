@@ -22,6 +22,8 @@ com.badlogic.gdx.scenes.scene2d.ui.Button$ButtonStyle: {
     sound: { down: sound_down, checked: sound_off, up: sound_on },
     about: { down: about_down, up: about },
     music: { down: music_down, checked: music_off, up: music_on },
+    pause: { down: pause_game_down, checked: pause_game_down, up: pause_game },
+    pause_small: { down: pause_game_small_down, checked: pause_game_small_down, up: pause_game_small },
     settings: { down: settings_down, up: settings }
 },
 com.badlogic.gdx.scenes.scene2d.ui.TextButton$TextButtonStyle: {

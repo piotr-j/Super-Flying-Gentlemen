@@ -129,6 +129,11 @@ public class AndroidActionResolver implements ActionResolver {
     }
 
     @Override
+    public boolean hasLeaderboard(Config.Difficulty difficulty) {
+        return gameServices.hasLeaderboard(difficulty);
+    }
+
+    @Override
     public void submitScore(int score, Config.Difficulty difficulty) {
         gameServices.submitScore(score, difficulty);
     }

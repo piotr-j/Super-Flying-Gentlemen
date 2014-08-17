@@ -24,6 +24,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool.Poolable;
 
 import io.piotrjastrzebski.sfg.utils.Assets;
@@ -31,14 +32,14 @@ import io.piotrjastrzebski.sfg.utils.Box2dUtils;
 import io.piotrjastrzebski.sfg.utils.Locator;
 
 public class Ceiling implements Poolable, Position, ViewPortUpdate {
-	private final static float WIDTH = 10;
+    public static final int OBSTACLE_WIDTH = 3;
     private final static float HEIGHT = 4;
 
     private static final String[] ceiling_names = {
 		"ceiling_v1", "ceiling_v2", "ceiling_v3"
 	};
-	private Body startBody;
-	private Body endBody;	private World world;
+    private final World world;
+    private Body body;
 	private TextureRegion support_tl, support_tr;
 	private TextureRegion ceiling[] = new TextureRegion[ceiling_names.length];
 	private int[] ceilingIds = new int[10];
@@ -54,10 +55,8 @@ public class Ceiling implements Poolable, Position, ViewPortUpdate {
     private float viewHeight;
 
 	public Ceiling() {
-		this.world = Locator.getWorld();
+        world = Locator.getWorld();
         pos = new Vector2();
-		startBody = Box2dUtils.createBox(-100, 0, WIDTH, 4);
-		endBody = Box2dUtils.createBox(-100, 0, WIDTH, 4);
         final Assets assets = Locator.getAssets();
 		support_tl = assets.getRegion("support_v1_tl");
 		support_tr = assets.getRegion("support_v1_tr");
@@ -79,9 +78,9 @@ public class Ceiling implements Poolable, Position, ViewPortUpdate {
 		this.width = width;
 		this.drawRSupport = drawRSupport;
 		this.drawLSupport = drawLSupport;
-		
-		startBody.setTransform(x+WIDTH/2+1.5f, y, 0);
-		endBody.setTransform(x+width-WIDTH/2-1.5f, y, 0);
+
+        body = Box2dUtils.createBox(x+width/2, y, width-OBSTACLE_WIDTH, HEIGHT);
+
 		for (int i = 0; i < ceilingIds.length-1; i++) {
 			if (i*3 < width-3){
 				ceilingIds[i] = MathUtils.random(ceiling.length-1);
@@ -128,8 +127,10 @@ public class Ceiling implements Poolable, Position, ViewPortUpdate {
 
 	@Override
 	public void reset() {
-		startBody.setTransform(-100, 0, 0);
-		endBody.setTransform(-100, 0, 0);
+        if (body!=null) {
+            world.destroyBody(body);
+            body = null;
+        }
         init = false;
 	}
 

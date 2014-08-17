@@ -79,6 +79,14 @@ public class DifficultySelectScreen extends DefaultScreen {
                 playButtonPressSound();
             }
         });
+        TextButton custom = new TextButton(assets.getText(Assets.DIFFICULTY_CUSTOM), assets.getSkin());
+        custom.addListener(new ClickListener(){
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                Locator.getApp().setScreen(new CustomDifficultyScreen());
+                playButtonPressSound();
+            }
+        });
         TextButton baby = new TextButton(assets.getText(Assets.DIFFICULTY_BABY), assets.getSkin());
         baby.addListener(new ClickListener(){
             @Override
@@ -98,6 +106,8 @@ public class DifficultySelectScreen extends DefaultScreen {
         root.row();
         root.add(hard).pad(20);
         root.row();
+        root.add(custom).pad(20);
+        root.row();
         root.add(baby).pad(20);
         root.row();
         root.add().expand();
@@ -115,7 +125,8 @@ public class DifficultySelectScreen extends DefaultScreen {
     }
 
     private void newGame(Config.Difficulty difficulty){
-        Locator.getApp().setScreen(new GameScreen(difficulty));
+        Locator.getConfig().setDifficulty(difficulty);
+        Locator.getApp().setScreen(new GameScreen());
     }
 
     @Override

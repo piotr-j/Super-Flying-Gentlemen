@@ -59,7 +59,7 @@ public class DesktopActionResolver implements ActionResolver {
 
     @Override
     public void showLeaderBoard() {
-        Gdx.app.log(SFGApp.TAG, "AR showLeaderBoard()");
+//        Gdx.app.log(SFGApp.TAG, "AR showLeaderBoard()");
     }
 
     @Override
@@ -69,17 +69,17 @@ public class DesktopActionResolver implements ActionResolver {
 
     @Override
     public void showAchievements() {
-        Gdx.app.log(SFGApp.TAG, "AR showAchievements()");
+//        Gdx.app.log(SFGApp.TAG, "AR showAchievements()");
     }
 
     @Override
     public void toggleImmersive(boolean enabled) {
-        Gdx.app.log(SFGApp.TAG, "AR toggleImmersive( "+enabled+" )");
+//        Gdx.app.log(SFGApp.TAG, "AR toggleImmersive( "+enabled+" )");
     }
 
     @Override
     public void submitScore(int score, Config.Difficulty difficulty) {
-        Gdx.app.log(SFGApp.TAG, "AR submitScore( "+score+" )");
+//        Gdx.app.log(SFGApp.TAG, "AR submitScore( "+score+" )");
         final String diff = difficulty.toString();
 
         int currentScore = preferences.getInteger(diff, 0);
@@ -87,6 +87,11 @@ public class DesktopActionResolver implements ActionResolver {
             preferences.putInteger(diff, score);
             preferences.flush();
         }
+    }
+
+    @Override
+    public boolean hasLeaderboard(Config.Difficulty difficulty) {
+        return false;
     }
 
     @Override
@@ -98,7 +103,7 @@ public class DesktopActionResolver implements ActionResolver {
 
     @Override
     public void unlockAchievement(PlayerStats.Name achievement) {
-        Gdx.app.log(SFGApp.TAG, "AR unlockAchievement( "+achievement+" )");
+//        Gdx.app.log(SFGApp.TAG, "AR unlockAchievement( "+achievement+" )");
         switch (achievement) {
             case BRONZE_HAT:
                 outfits |= OUTFIT_BRONZE;
@@ -125,7 +130,7 @@ public class DesktopActionResolver implements ActionResolver {
 
     @Override
     public void incrementAchievement(PlayerStats.IncrementName achievement, int amount) {
-        Gdx.app.log(SFGApp.TAG, "AR incrementAchievement( "+achievement+ " " + amount +" )");
+//        Gdx.app.log(SFGApp.TAG, "AR incrementAchievement( "+achievement+ " " + amount +" )");
     }
 
     @Override
@@ -159,14 +164,14 @@ public class DesktopActionResolver implements ActionResolver {
     public void signIn() {
         isSignedIn = true;
         sendEvent(ActionListener.SIGN_IN);
-        Gdx.app.log(SFGApp.TAG, "AR signIn()");
+//        Gdx.app.log(SFGApp.TAG, "AR signIn()");
     }
 
     @Override
     public void signOut() {
         isSignedIn = false;
         sendEvent(ActionListener.SIGN_OUT);
-        Gdx.app.log(SFGApp.TAG, "AR signOut()");
+//        Gdx.app.log(SFGApp.TAG, "AR signOut()");
     }
 
     @Override
@@ -189,17 +194,17 @@ public class DesktopActionResolver implements ActionResolver {
         if (!listeners.contains(listener, true)){
             listeners.add(listener);
         }
-        Gdx.app.log(SFGApp.TAG, "AR registerActionListener( "+listener.toString()+" )");
+//        Gdx.app.log(SFGApp.TAG, "AR registerActionListener( "+listener.toString()+" )");
     }
 
     @Override
     public void unRegisterActionListener(ActionListener listener) {
         listeners.removeValue(listener, true);
-        Gdx.app.log(SFGApp.TAG, "AR unRegisterActionListener( "+listener.toString()+" )");
+//        Gdx.app.log(SFGApp.TAG, "AR unRegisterActionListener( "+listener.toString()+" )");
     }
 
     public void sendGAEvent(String category, String action, String label) {
-        Gdx.app.log(SFGApp.TAG, "AR sendGAEvent( "+category+", "+action+", "+label+" )");
+//        Gdx.app.log(SFGApp.TAG, "AR sendGAEvent( "+category+", "+action+", "+label+" )");
     }
 
     @Override
@@ -209,17 +214,17 @@ public class DesktopActionResolver implements ActionResolver {
 
     @Override
     public void sendScreenView(String screen){
-        Gdx.app.log(SFGApp.TAG, "AR sendScreenView( "+screen+" )");
+//        Gdx.app.log(SFGApp.TAG, "AR sendScreenView( "+screen+" )");
     }
 
     @Override
     public void showAd() {
-        Gdx.app.log(SFGApp.TAG, "AR showAd()");
+//        Gdx.app.log(SFGApp.TAG, "AR showAd()");
     }
 
     @Override
     public void hideAd() {
-        Gdx.app.log(SFGApp.TAG, "AR hideAd()");
+//        Gdx.app.log(SFGApp.TAG, "AR hideAd()");
     }
 
     @Override
@@ -230,7 +235,7 @@ public class DesktopActionResolver implements ActionResolver {
 
     @Override
     public void restorePurchase() {
-        Gdx.app.log(SFGApp.TAG, "AR restorePurchase()");
+//        Gdx.app.log(SFGApp.TAG, "AR restorePurchase()");
     }
     @Override
     public boolean isPremium() {
@@ -239,16 +244,16 @@ public class DesktopActionResolver implements ActionResolver {
 
     @Override
     public void openWebsite(String url) {
-        Gdx.app.log(SFGApp.TAG, "AR openWebsite( "+url+" )");
+//        Gdx.app.log(SFGApp.TAG, "AR openWebsite( "+url+" )");
     }
 
     @Override
     public void rateApp() {
-        Gdx.app.log(SFGApp.TAG, "AR rateApp()");
+//        Gdx.app.log(SFGApp.TAG, "AR rateApp()");
     }
 
     @Override
     public void toast(String message) {
-        Gdx.app.log(SFGApp.TAG, "AR toast( "+message+" )");
+//        Gdx.app.log(SFGApp.TAG, "AR toast( "+message+" )");
     }
 }

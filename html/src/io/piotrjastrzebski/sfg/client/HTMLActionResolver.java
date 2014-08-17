@@ -88,6 +88,11 @@ public class HTMLActionResolver implements ActionResolver {
     }
 
     @Override
+    public boolean hasLeaderboard(Config.Difficulty difficulty) {
+        return false;
+    }
+
+    @Override
     public void unlockAchievement(PlayerStats.Name achievement) {
         switch (achievement) {
             case BRONZE_HAT:

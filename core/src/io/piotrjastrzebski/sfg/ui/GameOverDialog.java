@@ -23,6 +23,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Group;
+import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Dialog;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
@@ -31,11 +32,13 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 
 import io.piotrjastrzebski.sfg.ActionListener;
+import io.piotrjastrzebski.sfg.screen.GameScreen;
 import io.piotrjastrzebski.sfg.utils.Assets;
+import io.piotrjastrzebski.sfg.utils.Config;
 import io.piotrjastrzebski.sfg.utils.Locator;
 
 public class GameOverDialog extends Dialog implements ActionListener {
-    public  static enum RESULT {RESTART, LEADER_BOARDS, ACHIEVEMENTS, PREMIUM, RATE}
+    public  static enum RESULT {RESTART, LEADER_BOARDS, ACHIEVEMENTS, PREMIUM, RATE;}
     private final Label scoreLabel;
     private final Label maxLabel;
     private final Group newRecordGroup;
@@ -43,6 +46,7 @@ public class GameOverDialog extends Dialog implements ActionListener {
     private Actor rateButton;
     private long lastMax = 0;
     private Assets assets;
+    private GameButton retryButton;
 
     public GameOverDialog(Assets assets, long lastMax) {
         super(assets.getText(Assets.GAME_OVER), assets.getSkin());
@@ -84,11 +88,23 @@ public class GameOverDialog extends Dialog implements ActionListener {
                 buttons.add(rateButton);
                 buttons.row();
             }
-            buttons.add(createLeaderButton());
-            buttons.row();
-            buttons.add(createAchievButton()).pad(20);
+            Config.Difficulty difficulty = Locator.getConfig().getDifficulty();
+            if (Locator.getActionResolver().hasLeaderboard(difficulty)) {
+                buttons.add(createLeaderButton()).pad(0, 20, 20, 20);
+                buttons.row();
+            }
+            buttons.add(createAchievButton()).pad(0, 20, 20, 20);
             buttons.row();
             getPremiumTable = createPremiumButton();
+        }
+    }
+
+    public void show(Stage stage, boolean gameOver) {
+        super.show(stage);
+        if (gameOver){
+            retryButton.getLabel().setText(assets.getText(Assets.RETRY));
+        } else {
+            retryButton.getLabel().setText(assets.getText(Assets.RESUME));
         }
     }
 
@@ -173,7 +189,7 @@ public class GameOverDialog extends Dialog implements ActionListener {
 
     private GameButton createRetryButton() {
         // space padding cus positioning the image is pain in the ass
-        final GameButton retryButton = new GameButton(
+        retryButton = new GameButton(
                 assets.getText(Assets.RETRY),
                 assets.getUIRegion("retry"),
                 assets.getSkin());

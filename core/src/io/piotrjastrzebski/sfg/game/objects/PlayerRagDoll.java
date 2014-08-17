@@ -18,6 +18,7 @@
 
 package io.piotrjastrzebski.sfg.game.objects;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -64,17 +65,17 @@ public class PlayerRagDoll implements FixedUpdatable, VariableUpdatable {
     };
     // width of the body also offset for drawing
     private final static float[] WIDTHS = {
-            0.2f, 0.3f, 0.4f, 0.2f,
+            0.135f, 0.2f, 0.27f, 0.135f,
+            0.07f, 0.07f, 0.07f, 0.07f,
             0.1f, 0.1f, 0.1f, 0.1f,
-            0.15f, 0.15f, 0.15f, 0.15f,
-            0.2f
+            0.135f
     };
     // height of the body also offset for drawing
     private final static float[] HEIGHTS = {
-            0.2f, 1.1f, 0.55f, 0.2f,
-            0.3f, 0.3f, 0.4f, 0.4f,
-            0.45f, 0.45f, 0.4f, 0.4f,
-            0.4f
+            0.135f, 0.75f, 0.35f, 0.135f,
+            0.2f, 0.2f, 0.27f, 0.27f,
+            0.3f, 0.3f, 0.27f, 0.27f,
+            0.27f
     };
     private Skeleton skeleton;
     private boolean isAttached;
@@ -82,27 +83,29 @@ public class PlayerRagDoll implements FixedUpdatable, VariableUpdatable {
     private PlayerStats.Skin lastSkin;
     private Assets assets;
 
-    public PlayerRagDoll(Skeleton skeleton){
+    public PlayerRagDoll(Skeleton skeleton, float playerScale){
         this.skeleton = skeleton;
         assets = Locator.getAssets();
         final World world = Locator.getWorld();
         parts = new Array<Part>();
+        Gdx.app.log("", "scale: "+playerScale);
         // create parts for the slots we are interested in
         for (int i = 0; i < SLOT_NAMES.length; i++) {
             for (Slot slot:skeleton.getSlots()) {
                 if (slot == null)
                     continue;
                 if (slot.getData().getName().equals(SLOT_NAMES[i])){
-                    final Sprite sprite = scaledSprite(assets.getRegion(REGION_NAMES[i]));
-                    final Body body = createBody(world, i);
-                    final Part part = new Part(body, slot, sprite, WIDTHS[i], HEIGHTS[i]);
+                    final Sprite sprite = scaledSprite(assets.getRegion(REGION_NAMES[i]), playerScale);
+                    final Body body = createBody(world, i, playerScale);
+                    final Part part = new Part(body, slot, sprite,
+                            WIDTHS[i]*playerScale, HEIGHTS[i]*playerScale);
                     parts.add(part);
                 }
             }
         }
     }
 
-    private Body createBody(World world, int id){
+    private Body createBody(World world, int id, float scale){
         final BodyDef obstacleBodyDef = new BodyDef();
         obstacleBodyDef.type = BodyDef.BodyType.DynamicBody;
         final Body body = world.createBody(obstacleBodyDef);
@@ -111,7 +114,7 @@ public class PlayerRagDoll implements FixedUpdatable, VariableUpdatable {
         body.setAngularDamping(0.75f);
 
         final PolygonShape rect = new PolygonShape();
-        rect.setAsBox(WIDTHS[id], HEIGHTS[id]);
+        rect.setAsBox(WIDTHS[id]*scale, HEIGHTS[id]*scale);
 
         final FixtureDef fixtureDef = new FixtureDef();
         fixtureDef.shape = rect;
@@ -128,11 +131,11 @@ public class PlayerRagDoll implements FixedUpdatable, VariableUpdatable {
         return body;
     }
 
-    private Sprite scaledSprite(TextureRegion region){
+    private Sprite scaledSprite(TextureRegion region, float scale){
         Sprite sprite = new Sprite(region);
         sprite.setSize(
-                sprite.getWidth() * GameScreen.BOX2D_TO_PIXEL * 1.1f,
-                sprite.getHeight() * GameScreen.BOX2D_TO_PIXEL * 1.1f);
+                sprite.getWidth() * GameScreen.BOX2D_TO_PIXEL * 0.75f * scale,
+                sprite.getHeight() * GameScreen.BOX2D_TO_PIXEL * 0.75f * scale);
         sprite.setOriginCenter();
         return sprite;
     }

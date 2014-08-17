@@ -235,7 +235,7 @@ public class SkinSelectScreen extends DefaultScreen implements ActionListener {
         private PlayerAnimation animation;
 
         public AnimationWidget(PlayerStats.Skin skin){
-            animation = new PlayerAnimation();
+            animation = new PlayerAnimation(1.5f);
             // make it bigger
             animation.getSkeleton().getRootBone().setScale(48);
             animation.setSkin(skin);

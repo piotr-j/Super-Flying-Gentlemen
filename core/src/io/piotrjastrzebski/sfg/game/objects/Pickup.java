@@ -22,6 +22,7 @@ import io.piotrjastrzebski.sfg.game.objects.obstacles.SensorType;
 import io.piotrjastrzebski.sfg.utils.Assets;
 import io.piotrjastrzebski.sfg.utils.Collision;
 import io.piotrjastrzebski.sfg.utils.Config;
+import io.piotrjastrzebski.sfg.utils.ConfigData;
 import io.piotrjastrzebski.sfg.utils.Locator;
 import io.piotrjastrzebski.sfg.utils.Transform;
 import io.piotrjastrzebski.sfg.utils.Utils;
@@ -52,7 +53,7 @@ public class Pickup implements Poolable, Position, FixedUpdatable, VariableUpdat
 	}
 	private Body body;
     private boolean done = false;
-    private Config config;
+    private ConfigData config;
     private boolean pickedUp = false;
     private World world;
 	private float value = 0;
@@ -69,11 +70,11 @@ public class Pickup implements Poolable, Position, FixedUpdatable, VariableUpdat
     private Transform transform;
 
 	public Pickup() {
-		this.config = Locator.getConfig();
+		this.config = Locator.getConfig().getCurrentConfig();
 		this.world = Locator.getWorld();
 		transform = new Transform();
 
-		pointLight = new PointLight(Locator.getRayHandler(), 8, Color.WHITE, 4, -100, -100);
+		pointLight = new PointLight(Locator.getRayHandler(), 12, Color.WHITE, 4, -100, -100);
 		pointLight.setXray(true);
 		// create bodies
 		BodyDef obstacleBodyDef = new BodyDef(); 
@@ -125,22 +126,22 @@ public class Pickup implements Poolable, Position, FixedUpdatable, VariableUpdat
 		f.setUserData(SensorType.PICKUP);
 		switch (type) {
             case BOOST:
-                value = Utils.randomIntRange(config.getPickupBoost());
+                value = Utils.randomRange(config.getPickupBoost());
                 pickupSkeleton.setSkin("boost");
                 pointLight.setColor(1, 0.8f, 0.2f, 1);
                 break;
             case LIVES:
-                value = Utils.randomIntRange(config.getPickupLive());
+                value = Utils.randomRange(config.getPickupLives());
                 pickupSkeleton.setSkin("live");
                 pointLight.setColor(1, 0.3f, 0.0f, 1);
                 break;
             case SHIELD:
-                value = Utils.randomIntRange(config.getPickupShield());
+                value = Utils.randomRange(config.getPickupShield());
                 pickupSkeleton.setSkin("shield");
                 pointLight.setColor(0.8f, 0.8f, 0.8f, 1);
                 break;
             case TOXIC:
-                value = Utils.randomIntRange(config.getPickupToxic());
+                value = Utils.randomRange(config.getPickupToxic());
                 pickupSkeleton.setSkin("toxic");
                 pointLight.setColor(0.3f, 0.8f, 0.1f, 1);
                 break;

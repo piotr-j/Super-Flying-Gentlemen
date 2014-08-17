@@ -1,44 +1,4 @@
 {
-test:{
-    world:{
-		gravity:-50,
-		tile_width:25
-	},
-	player:{
-		fly_speed:7.5,
-		max_fly_speed:8.0,
-		fly_imp_mult: 20.0,
-		jump_delay: 0.05,
-		dash_time: 0.25,
-		dash_delay: 2.0,
-		dash_mult: 20.0,
-		jump_impulse: 16.0,
-		linear_dampening: 0.1,
-		lives: 1
-	},
-	obstacle:{
-		dst_range:{
-			min: 12.0,
-		 	max: 17.0
-		},
-        gap_range:{
-			min: 6.0,
-		 	max: 6.0
-		}
-	},
-	pickup:{
-	    spawn_chance: 0.25,
-        spawn_distance: 3,
-		live_range:{
-			min: 1,
-		 	max: 3
-		},
-		boost_range:{
-			min:1,
-			max:5
-		}
-	}
-},
 baby:{
     world:{
 		gravity:-50,
@@ -55,7 +15,9 @@ baby:{
 		jump_impulse: 16.0,
 		linear_dampening: 0.1,
 		lives: 999,
-        shields: 9
+        shields: 9,
+        scale: 1.5,
+        centre_offset: -5.0
 	},
 	obstacle:{
 		dst_range:{
@@ -103,17 +65,19 @@ hard:{
 		dash_mult: 40.0,
 		jump_impulse: 16.0,
 		linear_dampening: 0.1,
-		lives: 10,
-		shields: 3
+		lives: 3,
+		shields: 3,
+		scale: 1.65,
+        centre_offset: -5.0
 	},
 	obstacle:{
 		dst_range:{
-			min: 14.0,
-		 	max: 22.0
+			min: 10.0,
+		 	max: 20.0
 		},
 		gap_range:{
-            min: 7.0,
-            max: 9.0
+            min: 6.0,
+            max: 7.0
         }
 	},
 	pickup:{
@@ -143,8 +107,8 @@ very_hard:{
 		tile_width:25
 	},
 	player:{
-		fly_speed:7.5,
-		max_fly_speed:8.0,
+		fly_speed:8.5,
+		max_fly_speed:9.0,
 		fly_imp_mult: 20.0,
 		jump_delay: 0.05,
 		dash_time: 0.25,
@@ -153,16 +117,18 @@ very_hard:{
 		jump_impulse: 16.0,
 		linear_dampening: 0.1,
 		lives: 3,
-        shields: 1
+        shields: 1,
+        scale: 1.7,
+        centre_offset: -2.5
 	},
 	obstacle:{
 		dst_range:{
-			min: 12.0,
-		 	max: 20.0
+			min: 10.0,
+		 	max: 18.0
 		},
 		gap_range:{
-            min: 7.0,
-            max: 8.0
+            min: 6.0,
+            max: 6.5
         }
 	},
 	pickup:{
@@ -192,8 +158,8 @@ brutal:{
         tile_width:25
     },
     player:{
-        fly_speed:7.5,
-        max_fly_speed:8.0,
+        fly_speed:9.5,
+        max_fly_speed:10.0,
         fly_imp_mult: 20.0,
         jump_delay: 0.05,
         dash_time: 0.25,
@@ -202,16 +168,18 @@ brutal:{
         jump_impulse: 16.0,
         linear_dampening: 0.1,
         lives: 1,
-        shields: 1
+        shields: 1,
+        scale: 1.75,
+        centre_offset: 0.0
     },
     obstacle:{
         dst_range:{
-            min: 12.0,
-            max: 17.0
+            min: 10.0,
+            max: 16.0
         },
         gap_range:{
-            min: 7.0,
-            max: 7.0
+            min: 6.0,
+            max: 6.0
         }
     },
     pickup:{

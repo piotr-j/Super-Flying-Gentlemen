@@ -27,12 +27,13 @@ import io.piotrjastrzebski.sfg.game.objects.Pickup;
 public class Settings {
     private final static String RATED = "RATED";
     private final static String LIGHTS_STATE = "LIGHTS_STATE";
-    private final static String TUT_1_SHOWED = "TUT_1_SHOWED";
-    private final static String TUT_2_SHOWED = "TUT_2_SHOWED";
-    private final static String PT_1_SHOWED = "PT_1_SHOWED";
-    private final static String PT_2_SHOWED = "PT_2_SHOWED";
-    private final static String PT_3_SHOWED = "PT_3_SHOWED";
-    private final static String PT_4_SHOWED = "PT_4_SHOWED";
+    private final static String TUT_1_SHOWN = "TUT_1_SHOWN";
+    private final static String TUT_2_SHOWN = "TUT_2_SHOWN";
+    private final static String TUT_3_SHOWN = "TUT_3_SHOWN";
+    private final static String PT_1_SHOWN = "PT_1_SHOWN";
+    private final static String PT_2_SHOWN = "PT_2_SHOWN";
+    private final static String PT_3_SHOWN = "PT_3_SHOWN";
+    private final static String PT_4_SHOWN = "PT_4_SHOWN";
     public final static String IMMERSIVE_MODE_STATE = "IMMERSSIVE_MODE_STATE";
     public final static boolean IMMERSIVE_MODE_OFF = false;
     public final static boolean IMMERSIVE_MODE_ON = true;
@@ -42,12 +43,13 @@ public class Settings {
     private final Preferences preferences;
     private boolean isLightsEnabled;
     private int lightsState;
-    private boolean tut1Showed;
-    private boolean tut2Showed;
-    private boolean pt1Showed;
-    private boolean pt2Showed;
-    private boolean pt3Showed;
-    private boolean pt4Showed;
+    private boolean tut1Shown;
+    private boolean tut2Shown;
+    private boolean tut3Shown;
+    private boolean pt1Shown;
+    private boolean pt2Shown;
+    private boolean pt3Shown;
+    private boolean pt4Show;
     private boolean immersiveState;
     private boolean rated;
 
@@ -55,12 +57,13 @@ public class Settings {
         preferences = Gdx.app.getPreferences(SFGApp.PREFS);
         lightsState = preferences.getInteger(LIGHTS_STATE, LIGHTS_CHECK_FPS);
         immersiveState = preferences.getBoolean(IMMERSIVE_MODE_STATE, IMMERSIVE_MODE_ON);
-        tut1Showed = preferences.getBoolean(TUT_1_SHOWED, false);
-        tut2Showed = preferences.getBoolean(TUT_2_SHOWED, false);
-        pt1Showed = preferences.getBoolean(PT_1_SHOWED, false);
-        pt2Showed = preferences.getBoolean(PT_2_SHOWED, false);
-        pt3Showed = preferences.getBoolean(PT_3_SHOWED, false);
-        pt4Showed = preferences.getBoolean(PT_4_SHOWED, false);
+        tut1Shown = preferences.getBoolean(TUT_1_SHOWN, false);
+        tut2Shown = preferences.getBoolean(TUT_2_SHOWN, false);
+        tut3Shown = preferences.getBoolean(TUT_3_SHOWN, false);
+        pt1Shown = preferences.getBoolean(PT_1_SHOWN, false);
+        pt2Shown = preferences.getBoolean(PT_2_SHOWN, false);
+        pt3Shown = preferences.getBoolean(PT_3_SHOWN, false);
+        pt4Show = preferences.getBoolean(PT_4_SHOWN, false);
         rated = preferences.getBoolean(RATED, false);
         isLightsEnabled = lightsState != LIGHTS_OFF;
     }
@@ -68,12 +71,13 @@ public class Settings {
     public void saveState(){
         preferences.putInteger(LIGHTS_STATE, lightsState);
         preferences.putBoolean(IMMERSIVE_MODE_STATE, immersiveState);
-        preferences.putBoolean(TUT_1_SHOWED, tut1Showed);
-        preferences.putBoolean(TUT_1_SHOWED, tut1Showed);
-        preferences.putBoolean(PT_1_SHOWED, pt1Showed);
-        preferences.putBoolean(PT_2_SHOWED, pt2Showed);
-        preferences.putBoolean(PT_3_SHOWED, pt3Showed);
-        preferences.putBoolean(PT_4_SHOWED, pt4Showed);
+        preferences.putBoolean(TUT_1_SHOWN, tut1Shown);
+        preferences.putBoolean(TUT_2_SHOWN, tut2Shown);
+        preferences.putBoolean(TUT_3_SHOWN, tut3Shown);
+        preferences.putBoolean(PT_1_SHOWN, pt1Shown);
+        preferences.putBoolean(PT_2_SHOWN, pt2Shown);
+        preferences.putBoolean(PT_3_SHOWN, pt3Shown);
+        preferences.putBoolean(PT_4_SHOWN, pt4Show);
         preferences.putBoolean(RATED, rated);
         preferences.flush();
     }
@@ -100,30 +104,40 @@ public class Settings {
         this.immersiveState = immersiveState;
         saveState();
     }
+
     public void setTutJumpShowed(boolean showed) {
-        tut1Showed = showed;
+        tut1Shown = showed;
         saveState();
     }
 
     public boolean getTutJumpShowed(){
-        return tut1Showed;
+        return tut1Shown;
     }
 
     public void setTutBoostShowed(boolean showed) {
-        tut2Showed = showed;
+        tut2Shown = showed;
         saveState();
     }
 
     public boolean getTutBoostShowed(){
-        return tut2Showed;
+        return tut2Shown;
+    }
+
+    public void setTutBreakableShowed(boolean showed) {
+        tut3Shown = showed;
+        saveState();
+    }
+
+    public boolean getTutBreakableShowed() {
+        return tut3Shown;
     }
 
     public boolean getPickupTutShowed(Pickup.Type type){
         switch (type){
-            case LIVES: return pt1Showed;
-            case BOOST: return pt2Showed;
-            case SHIELD: return pt3Showed;
-            case TOXIC: return pt4Showed;
+            case LIVES: return pt1Shown;
+            case BOOST: return pt2Shown;
+            case SHIELD: return pt3Shown;
+            case TOXIC: return pt4Show;
             default:  return false;
         }
     }
@@ -131,16 +145,16 @@ public class Settings {
     public void setPickupTutShowed(Pickup.Type type){
         switch (type){
             case LIVES:
-                pt1Showed = true;
+                pt1Shown = true;
                 break;
             case BOOST:
-                pt2Showed = true;
+                pt2Shown = true;
                 break;
             case SHIELD:
-                pt3Showed = true;
+                pt3Shown = true;
                 break;
             case TOXIC:
-                pt4Showed = true;
+                pt4Show = true;
                 break;
             default: break;
         }
@@ -157,12 +171,13 @@ public class Settings {
     }
 
     public void resetTutorials() {
-        pt1Showed = false;
-        pt2Showed = false;
-        pt3Showed = false;
-        pt4Showed = false;
-        tut1Showed = false;
-        tut2Showed = false;
+        pt1Shown = false;
+        pt2Shown = false;
+        pt3Shown = false;
+        pt4Show = false;
+        tut1Shown = false;
+        tut2Shown = false;
+        tut3Shown = false;
         saveState();
     }
 }

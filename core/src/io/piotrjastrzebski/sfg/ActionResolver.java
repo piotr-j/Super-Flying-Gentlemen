@@ -28,6 +28,7 @@ public interface ActionResolver {
 
     public void submitScore(int score, Config.Difficulty difficulty);
     public void queryScore(Config.Difficulty difficulty);
+    public boolean hasLeaderboard(Config.Difficulty difficulty);
     public void unlockAchievement(PlayerStats.Name achievement);
     public void incrementAchievement(PlayerStats.IncrementName achievement, int amount);
     public boolean getAchievementStatus(PlayerStats.Name achievement);

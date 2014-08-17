@@ -19,4 +19,7 @@
     <string name="purchase_restored">Purchases restored</string>
     <string name="restart_required">Restart the app for changes to take effect</string>
     <string name="get_premium_banner">Get premium to remove ads!</string>
+    <string name="not_supported_title">Device is not supported</string>
+    <string name="not_supported_text">Your device is not supported, OpenGL ES 2.0 is required.</string>
+    <string name="ok" translatable="false">OK</string>
 </resources>

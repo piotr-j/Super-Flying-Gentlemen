@@ -37,8 +37,9 @@ public class PlayerAnimation {
 	private Skeleton skeleton;
 	private AnimationState animState;
 	
-	public PlayerAnimation(){
+	public PlayerAnimation(float playerScale){
         final Assets assets = Locator.getAssets();
+        assets.initPlayerAnimations(playerScale);
         final SkeletonData skeletonData = assets.getSkeletonData(Assets.Animations.PLAYER);
 		skeleton = new Skeleton(skeletonData);
 		

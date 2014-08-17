@@ -24,6 +24,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool.Poolable;
 
 import io.piotrjastrzebski.sfg.utils.Assets;
@@ -31,17 +32,16 @@ import io.piotrjastrzebski.sfg.utils.Box2dUtils;
 import io.piotrjastrzebski.sfg.utils.Locator;
 
 public class Ground implements Poolable, Position, ViewPortUpdate {
-	private static final String[] floor_names = {
+    private static final String[] floor_names = {
 		"floor_v1", "floor_v2", "floor_v3"
 	};
 	private static final String[] ground_names = {
 		"ground_v1", "ground_v2", "ground_v3"
 	};
 
-	private final static float WIDTH = 10;
 	private final static float HEIGHT = 4;
-	private Body startBody;
-	private Body endBody;
+    public static final int OBSTACLE_WIDTH = 3;
+    private Body body;
 	private World world;
 	private TextureRegion support_bl, support_br;
 	private TextureRegion floor[] = new TextureRegion[floor_names.length];
@@ -60,9 +60,6 @@ public class Ground implements Poolable, Position, ViewPortUpdate {
 	public Ground() {
 		world = Locator.getWorld();
         pos = new Vector2();
-		startBody = Box2dUtils.createBox(-100, 0, WIDTH, HEIGHT);
-		endBody = Box2dUtils.createBox(-100, 0, WIDTH, HEIGHT);
-
         final Assets assets = Locator.getAssets();
 		support_bl = assets.getRegion("support_v1_bl");
 		support_br = assets.getRegion("support_v1_br");
@@ -88,10 +85,8 @@ public class Ground implements Poolable, Position, ViewPortUpdate {
 		this.width = width;
 		this.drawLSupport = drawLSupport;
 		this.drawRSupport = drawRSupport;
-		
-		startBody.setTransform(x+WIDTH/2+1.5f, y, 0);
-		endBody.setTransform(x+width-WIDTH/2-1.5f, y, 0);
-		
+        body = Box2dUtils.createBox(x+width/2, y, width-OBSTACLE_WIDTH, HEIGHT);
+
 		for (int i = 0; i < floorIds.length-1; i++) {
 			if (i*3 < width-3){
 				floorIds[i] = MathUtils.random(floor.length-1);
@@ -149,8 +144,10 @@ public class Ground implements Poolable, Position, ViewPortUpdate {
 
 	@Override
 	public void reset() {
-		startBody.setTransform(-100, 0, 0);
-		endBody.setTransform(-100, 0, 0);
+        if (body!=null) {
+            world.destroyBody(body);
+            body = null;
+        }
         init = false;
 	}
 

@@ -25,16 +25,17 @@ import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
+import com.badlogic.gdx.scenes.scene2d.ui.Button;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.utils.Pools;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.esotericsoftware.spine.SkeletonRenderer;
 
@@ -47,19 +48,27 @@ import io.piotrjastrzebski.sfg.game.ContactDispatcher;
 import io.piotrjastrzebski.sfg.game.PlayerStats;
 import io.piotrjastrzebski.sfg.game.SFGGame;
 import io.piotrjastrzebski.sfg.game.objects.Background;
-import io.piotrjastrzebski.sfg.game.objects.obstacles.Obstacle;
 import io.piotrjastrzebski.sfg.game.tutorials.Boost;
+import io.piotrjastrzebski.sfg.game.tutorials.Breakable;
 import io.piotrjastrzebski.sfg.game.tutorials.Jump;
 import io.piotrjastrzebski.sfg.screen.inputhandlers.GameInputHandler;
 import io.piotrjastrzebski.sfg.ui.BoostBar;
 import io.piotrjastrzebski.sfg.ui.GameOverDialog;
 import io.piotrjastrzebski.sfg.utils.Assets;
 import io.piotrjastrzebski.sfg.utils.Config;
-import io.piotrjastrzebski.sfg.utils.Config.Difficulty;
+import io.piotrjastrzebski.sfg.utils.ConfigData;
 import io.piotrjastrzebski.sfg.utils.FPSCheck;
 import io.piotrjastrzebski.sfg.utils.Locator;
 
 public class GameScreen extends DefaultScreen implements EventListener {
+    public static final int TARGET_ZOOM = 1;
+    public static final float INITIAL_ZOOM = 0.5f;
+    public static final int INITIAL_PLAYER_OFFSET = 0;
+    public static final int DEFAULT_ZOOM_SCALE = 1;
+    public static final int FAST_ZOOM_SCALE = 5;
+    public static final int ZOOM_START_TIME = 2;
+    public static final float ZOOM_TOTAL_TIME = 5.0f;
+    private final ConfigData configData;
     private SkeletonRenderer skeletonRenderer;
 
     protected enum GameState {
@@ -71,7 +80,8 @@ public class GameScreen extends DefaultScreen implements EventListener {
     // 1 meter in box2d equals to 48 pixels
 	public final static float BOX2D_TO_PIXEL = 1/48.0f;
     // Offset from center for camera
-	public static final float PLAYER_OFFSET = VIEWPORT_WIDTH/4;
+    private final float PLAYER_OFFSET;
+    private final float ZOOM_SPEED;
     private GameState state = GameState.RUNNING;
     private Label scoreLabel;
     private Table scoreContainer;
@@ -112,6 +122,7 @@ public class GameScreen extends DefaultScreen implements EventListener {
 
     private Jump jumpTut;
     private Boost boostTut;
+    private Breakable breakableTut;
 
     private Color toxicColor;
     private Color redColor;
@@ -120,23 +131,30 @@ public class GameScreen extends DefaultScreen implements EventListener {
     private int lastLives;
     private int lastShields;
 
-	public GameScreen(Difficulty difficulty) {
+	public GameScreen() {
 		super();
         Gdx.input.setInputProcessor(new GameInputHandler(this).getIM());
         Gdx.input.setCatchBackKey(true);
-        config = new Config(difficulty);
+        config = Locator.getConfig();
+        configData = config.getCurrentConfig();
+
+        PLAYER_OFFSET = configData.getPlayerCentreOffset().value();
+        // we need to calculate offset speed so we end up in correct position after 5 seconds
+        ZOOM_SPEED = Math.abs(PLAYER_OFFSET/ZOOM_TOTAL_TIME);
+
         eventLoop = Locator.getEvents();
         registerEvents();
         actionResolver = Locator.getActionResolver();
         settings = Locator.getSettings();
         fpsCheck = new FPSCheck(this);
-        actionResolver.sendScreenView("GameScreen " + difficulty.toString());
+        actionResolver.sendScreenView("GameScreen " + config.getDifficulty().toString());
         initGame();
         initUI();
     }
 
     private void registerEvents() {
         eventLoop.register(this, EventType.SHOW_BOOST_TUT);
+        eventLoop.register(this, EventType.SHOW_BREAKABLE_TUT);
         eventLoop.register(this, EventType.PLAYER_ALIVE);
         eventLoop.register(this, EventType.PLAYER_LIVES_CHANGED);
         eventLoop.register(this, EventType.PLAYER_BOOST_CHANGED);
@@ -146,6 +164,7 @@ public class GameScreen extends DefaultScreen implements EventListener {
 
     private void unRegisterEvents() {
         eventLoop.unregister(this, EventType.SHOW_BOOST_TUT);
+        eventLoop.unregister(this, EventType.SHOW_BREAKABLE_TUT);
         eventLoop.unregister(this, EventType.PLAYER_ALIVE);
         eventLoop.unregister(this, EventType.PLAYER_LIVES_CHANGED);
         eventLoop.unregister(this, EventType.PLAYER_BOOST_CHANGED);
@@ -163,7 +182,7 @@ public class GameScreen extends DefaultScreen implements EventListener {
 		gameCamera.position.set(10, 16, 0);
 		gameCamera.update();
 
-        world = new World(new Vector2(0, -50), true);
+        world = new World(new Vector2(0, configData.getGravity().value()), true);
         world.setContactListener(new ContactDispatcher());
 
         RayHandler.setGammaCorrection(true);
@@ -200,6 +219,8 @@ public class GameScreen extends DefaultScreen implements EventListener {
         actor.setOrigin(actor.getWidth()/2, actor.getHeight()/2);
     }
 
+    private Button pauseButton;
+
 	private void initUI(){
 		Table root = new Table();
         root.setFillParent(true);
@@ -214,13 +235,14 @@ public class GameScreen extends DefaultScreen implements EventListener {
         shieldsContainer = createContainer(shieldsLabel);
 
         topContainer = new Table();
-        dashDelay = config.getPlayerDashDelay();
+        Table topLeftContainer = new Table();
+        dashDelay = configData.getPlayerDashDelay().value();
         boostBar = new BoostBar(assets, 0, dashDelay, dashDelay/1000.0f);
-        boostBar.setAnimateFromValue(config.getPlayerDashDelay());
+        boostBar.setAnimateFromValue(dashDelay);
         boostBar.setEnabled(true);
         boostBar.reset();
-        topContainer.add(boostBar).expandX().fillX();
-        topContainer.row();
+        topLeftContainer.add(boostBar).expandX().fillX();
+        topLeftContainer.row();
 
         Table labelContainer = new Table();
         labelContainer.add(new Label(assets.getText(Assets.SCORE), assets.getSkin())).padRight(20);
@@ -230,10 +252,24 @@ public class GameScreen extends DefaultScreen implements EventListener {
         labelContainer.add(new Image(assets.getUIRegion("shield_small"))).padRight(20);
         labelContainer.add(livesContainer).padRight(20);
         labelContainer.add(new Image(assets.getUIRegion("hearth_small")));
-        topContainer.add(labelContainer).expandX().fillX();
+        topLeftContainer.add(labelContainer).expandX().fillX();
+        topContainer.add(topLeftContainer).fillX().expandX().padRight(20);
         // invisible at start
         topContainer.setColor(1, 1, 1, 0);
 
+        pauseButton = new Button(assets.getSkin(), "pause");
+        pauseButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                super.clicked(event, x, y);
+                if (pauseButton.isChecked()) {
+                    pauseGame();
+                } else {
+                    resumeGame();
+                }
+            }
+        });
+        topContainer.add(pauseButton);
         root.add(topContainer).fillX().expandX().pad(20);
         root.row();
 
@@ -247,8 +283,7 @@ public class GameScreen extends DefaultScreen implements EventListener {
                 GameOverDialog.RESULT result = (RESULT) object;
                 switch (result){
                     case RESTART:
-                        GameScreen.this.reset();
-                        actionResolver.sendGameGAEvent("PlayerReSpawned", "");
+                        GameScreen.this.handleRestart();
                         break;
                     case LEADER_BOARDS:
                         playerStats.showLeaderBoards();
@@ -281,7 +316,10 @@ public class GameScreen extends DefaultScreen implements EventListener {
 
         if (!settings.getTutBoostShowed()){
             boostTut = new Boost(assets);
-            eventLoop.register(this, EventType.SHOW_BOOST_TUT);
+        }
+
+        if (!settings.getTutBreakableShowed()){
+            breakableTut = new Breakable(assets);
         }
 
         toxicColor = assets.getSkin().getColor("toxic");
@@ -289,14 +327,27 @@ public class GameScreen extends DefaultScreen implements EventListener {
         whiteColor = assets.getSkin().getColor("white");
     }
 
+    public void handleRestart(){
+        switch (state) {
+            case PAUSED:
+                resumeGame();
+                break;
+            case GAME_OVER:
+                reset();
+                actionResolver.sendGameGAEvent("PlayerReSpawned", "");
+                break;
+            default:
+                break;
+        }
+        actionResolver.hideAd();
+    }
+
     private void initLocator(){
-        Locator.provideConfig(config);
         Locator.provideRayHandler(rayHandler);
         Locator.provideWorld(world);
     }
 
     private void deInitLocator(){
-        Locator.provideConfig(null);
         Locator.provideRayHandler(null);
         Locator.provideWorld(null);
     }
@@ -317,6 +368,9 @@ public class GameScreen extends DefaultScreen implements EventListener {
 			state = GameState.PAUSED;
 			sfgGame.pauseGame();
             boostBar.setEnabled(false);
+            pauseButton.setChecked(true);
+            topContainer.addAction(Actions.alpha(0, 0.5f));
+            showDialog();
 			break;
 		default:
 			break;
@@ -324,7 +378,6 @@ public class GameScreen extends DefaultScreen implements EventListener {
 	}
 	
 	public void reset(){
-        actionResolver.hideAd();
         initZoom();
 		deathTimer = 0;
 		gameCamera.position.set(10, 16, 0);
@@ -335,9 +388,13 @@ public class GameScreen extends DefaultScreen implements EventListener {
 		state = GameState.RUNNING;
         boostBar.setEnabled(true);
         boostBar.reset();
+        pauseButton.setChecked(false);
+        actionResolver.hideAd();
+        updateCamera();
     }
 	
 	private void backToMenu(){
+        actionResolver.hideAd();
 		Locator.getApp().setScreen(new MainMenuScreen());
 	}
 
@@ -348,14 +405,20 @@ public class GameScreen extends DefaultScreen implements EventListener {
         boostBar.setEnabled(true);
         sfgGame.resumeGame();
 		state = GameState.RUNNING;
+        pauseButton.setChecked(false);
+        topContainer.addAction(Actions.alpha(1, 1.5f));
 	}
 
     private void gameOver(){
         state = GameState.GAME_OVER;
+        showDialog();
+    }
+
+    private void showDialog(){
         gameOverDialog.updateScores(
                 playerStats.getScore(), playerStats.getMaxScore(), playerStats.isPremium());
         actionResolver.showAd();
-        gameOverDialog.show(stage);
+        gameOverDialog.show(stage, state!=GameState.PAUSED);
         // so keyboard works when dialog is visible
         stage.setKeyboardFocus(null);
     }
@@ -364,10 +427,9 @@ public class GameScreen extends DefaultScreen implements EventListener {
         topContainer.setColor(1, 1, 1, 0);
         isZooming = true;
         zoomTimer = 0;
-        zoom = 0.5f;
-        playerOffset = 0;
-        zoomScale = 1;
-
+        zoom = INITIAL_ZOOM;
+        playerOffset = INITIAL_PLAYER_OFFSET;
+        zoomScale = DEFAULT_ZOOM_SCALE;
         gameCamera.zoom = zoom;
         background.zoom(zoom);
     }
@@ -376,16 +438,23 @@ public class GameScreen extends DefaultScreen implements EventListener {
         if (state != GameState.RUNNING)
             return;
         zoomTimer +=delta;
-        if (isZooming && zoomTimer > 2){
+        if (isZooming && zoomTimer > ZOOM_START_TIME){
             // starts at 0.5f
-            if (zoom < 1){
+            if (zoom < TARGET_ZOOM){
+                // 5 seconds
                 zoom += delta*0.1f*zoomScale;
-                // move player to the size
-                playerOffset += delta*zoomScale;
+                // zoom is stepped in 0.5f increments
+                if (PLAYER_OFFSET > 0.4f){
+                    // move player right
+                    playerOffset += delta*zoomScale*ZOOM_SPEED;
+                } else if (PLAYER_OFFSET < -0.4f){
+                    // move player left
+                    playerOffset -= delta*zoomScale*ZOOM_SPEED;
+                }
                 // fade in labels
                 topContainer.setColor(1, 1, 1, playerOffset * 0.2f);
             } else {
-                zoom = 1;
+                zoom = TARGET_ZOOM;
                 playerOffset = PLAYER_OFFSET;
                 isZooming = false;
                 topContainer.setColor(1, 1, 1, 1);
@@ -398,15 +467,15 @@ public class GameScreen extends DefaultScreen implements EventListener {
         }
     }
 
-    public void updateCamera(float x){
-        gameCamera.position.x = x + playerOffset;
+    public void updateCamera(){
+        gameCamera.position.x = sfgGame.getPlayerX() - playerOffset;
     }
 
     @Override
 	public void update(float delta) {
         super.update(delta);
 		if (!isPlayerDead){
-			updateCamera(sfgGame.getPlayerX());
+			updateCamera();
 		}
         background.update(delta, gameCamera.position.x);
         gameCamera.update();
@@ -414,6 +483,7 @@ public class GameScreen extends DefaultScreen implements EventListener {
             rayHandler.update();
         }
 
+        // todo encapsulate tutorial stuff
         if (jumpTut != null){
             jumpTut.update(delta, gameCamera.position.x+2);
             if (jumpTut.isDisabled()) {
@@ -425,6 +495,13 @@ public class GameScreen extends DefaultScreen implements EventListener {
             boostTut.update(delta, gameCamera.position.x+2);
             if (boostTut.isDisabled()) {
                 boostTut = null;
+            }
+        }
+
+        if (breakableTut != null){
+            breakableTut.update(delta, gameCamera.position.x+2);
+            if (breakableTut.isDisabled()) {
+                breakableTut = null;
             }
         }
 
@@ -476,13 +553,16 @@ public class GameScreen extends DefaultScreen implements EventListener {
         if (SFGApp.DEBUG_BOX2D) {
             debugRenderer.render(sfgGame.getWorld(), gameCamera.combined);
         }
-        if (jumpTut != null || boostTut != null) {
+        if (jumpTut != null || boostTut != null || breakableTut != null) {
             batch.begin();
             if (jumpTut != null) {
                 jumpTut.draw(batch, skeletonRenderer);
             }
             if (boostTut != null) {
                 boostTut.draw(batch, skeletonRenderer);
+            }
+            if (breakableTut != null) {
+                breakableTut.draw(batch, skeletonRenderer);
             }
             batch.end();
         }
@@ -500,11 +580,7 @@ public class GameScreen extends DefaultScreen implements EventListener {
             break;
 		case RUNNING:
 			sfgGame.tap();
-            // zoom in faster
-            if (isZooming) {
-                zoomScale = 5;
-                zoomTimer = 2;
-            }
+            cancelZoom();
 			break;
 		case DEAD:
 			// short delay so you dont immediately show game over dialog
@@ -528,19 +604,29 @@ public class GameScreen extends DefaultScreen implements EventListener {
             eventLoop.unregister(this, EventType.SHOW_BOOST_TUT);
         }
 
+        if (breakableTut!=null && breakableTut.isVisible()){
+            breakableTut.hide();
+            settings.setTutBreakableShowed(true);
+            eventLoop.unregister(this, EventType.SHOW_BREAKABLE_TUT);
+        }
+
         switch (state) {
 		case RUNNING:
 			sfgGame.swipe();
-            if (isZooming) {
-                zoomScale = 5;
-                zoomTimer = 2;
-            }
+            cancelZoom();
 			break;
 		default:
 			handleTap();
 			break;
 		}
 	}
+
+    private void cancelZoom(){
+        if (isZooming) {
+            zoomScale = FAST_ZOOM_SCALE;
+            zoomTimer = ZOOM_START_TIME;
+        }
+    }
 	
 	public void handleBack(){
         switch (state){
@@ -626,6 +712,9 @@ public class GameScreen extends DefaultScreen implements EventListener {
             case EventType.SHOW_BOOST_TUT:
                 initBoostTut((Vector2)e.getData());
                 break;
+            case EventType.SHOW_BREAKABLE_TUT:
+                initBreakableTut((Vector2) e.getData());
+                break;
             case EventType.PLAYER_ALIVE:
                 setPlayerDead(!(Boolean) e.getData());
                 break;
@@ -649,6 +738,12 @@ public class GameScreen extends DefaultScreen implements EventListener {
     private void initBoostTut(Vector2 pos){
         if (boostTut != null){
             boostTut.init(pos.x-14, 16);
+        }
+    }
+
+    private void initBreakableTut(Vector2 pos){
+        if (breakableTut != null){
+            breakableTut.init(pos.x-14, 16);
         }
     }
 
@@ -737,6 +832,9 @@ public class GameScreen extends DefaultScreen implements EventListener {
         }
         if (boostTut != null) {
             boostTut.disable();
+        }
+        if (breakableTut != null) {
+            breakableTut.disable();
         }
     }
 }

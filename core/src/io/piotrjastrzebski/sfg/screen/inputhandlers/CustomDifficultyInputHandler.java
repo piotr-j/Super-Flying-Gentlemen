@@ -16,20 +16,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.piotrjastrzebski.sfg.utils;
+package io.piotrjastrzebski.sfg.screen.inputhandlers;
 
-public class Utils {
-    /**
-     * Return rounded number from given range
-     */
-    public static float randomRange(final ClampedRangeFloat range){
-        return Math.round(range.low() + Math.random() * ((range.high() - range.low() +0.5f)));
+import com.badlogic.gdx.Input;
+
+import io.piotrjastrzebski.sfg.screen.CustomDifficultyScreen;
+
+public class CustomDifficultyInputHandler extends InputHandler<CustomDifficultyScreen> {
+    public CustomDifficultyInputHandler(CustomDifficultyScreen screen) {
+        super(screen);
     }
 
-    /**
-     * Return number from given range where [min, max]
-     */
-    public static int randomRange(final ClampedRangeInt range){
-        return (int) (range.low() + Math.random() * (range.high() - range.low() +0.5f));
+    @Override
+    public boolean keyDown(int keycode) {
+        switch (keycode) {
+            case Input.Keys.ESCAPE:
+            case Input.Keys.BACK:
+                screen.handleBack();
+                break;
+            case Input.Keys.ENTER:
+                screen.handleEnter();
+            default:
+                break;
+        }
+        return false;
     }
 }

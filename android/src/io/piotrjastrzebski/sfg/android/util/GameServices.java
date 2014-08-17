@@ -193,12 +193,27 @@ public class GameServices implements GameHelper.GameHelperListener {
         if (!isSignedIn()){
             signIn();
         } else {
-            activity.startActivityForResult(
-                    Games.Leaderboards.getLeaderboardIntent(
-                            gh.getApiClient(),
-                            getLeaderBoardId(difficulty)),
-                    RESULT_LB_SCORE
-            );
+            String id = getLeaderBoardId(difficulty);
+            if (id != null) {
+                activity.startActivityForResult(
+                        Games.Leaderboards.getLeaderboardIntent(
+                                gh.getApiClient(),
+                                id),
+                        RESULT_LB_SCORE
+                );
+            }
+        }
+    }
+
+    public boolean hasLeaderboard(Config.Difficulty difficulty) {
+        switch (difficulty){
+            case BRUTAL:
+            case VERY_HARD:
+            case HARD:
+            case BABY:
+                return true;
+            default:
+                return false;
         }
     }
 
@@ -218,11 +233,11 @@ public class GameServices implements GameHelper.GameHelperListener {
     }
 
     public void submitScore(int score, Config.Difficulty difficulty) {
-        if (isSignedIn()){
-
+        String id = getLeaderBoardId(difficulty);
+        if (isSignedIn() && id != null){
             Games.Leaderboards.submitScore(
                     gh.getApiClient(),
-                    getLeaderBoardId(difficulty),
+                    id,
                     score);
         } else {
             final String diff = difficulty.toString();
@@ -236,11 +251,12 @@ public class GameServices implements GameHelper.GameHelperListener {
     }
 
     public void queryScore(final Config.Difficulty difficulty) {
-        if (isSignedIn()){
+        String id = getLeaderBoardId(difficulty);
+        if (isSignedIn() && id != null){
             // query the score
             Games.Leaderboards.loadCurrentPlayerLeaderboardScore(
                     gh.getApiClient(),
-                    getLeaderBoardId(difficulty),
+                    id,
                     LeaderboardVariant.TIME_SPAN_ALL_TIME,
                     LeaderboardVariant.COLLECTION_PUBLIC).setResultCallback(new ResultCallback<Leaderboards.LoadPlayerScoreResult>() {
                 @Override

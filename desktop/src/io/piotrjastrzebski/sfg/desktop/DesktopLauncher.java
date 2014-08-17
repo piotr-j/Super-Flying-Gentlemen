@@ -26,11 +26,12 @@ import io.piotrjastrzebski.sfg.SFGApp;
 public class DesktopLauncher {
 	public static void main (String[] arg) {
 		LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
-		config.vSyncEnabled = true;
+//		config.vSyncEnabled = true;
 		config.width = 768/2;
 		config.width = 1080/2;
 		config.height = 1280/2;
 		config.height = 1920/2;
+        config.foregroundFPS = 50;
         DesktopActionResolver actionResolver = new DesktopActionResolver();
         SFGApp app = new SFGApp(actionResolver);
 		new LwjglApplication(app, config);

@@ -1,26 +1,26 @@
 
 sfg_ui.png
-size: 2029,1022
+size: 2048,1022
 format: RGBA8888
 filter: MipMapLinearNearest,Nearest
 repeat: none
 about
   rotate: false
-  xy: 1941, 899
+  xy: 1304, 775
   size: 78, 121
   orig: 78, 121
   offset: 0, 0
   index: -1
 about_down
   rotate: false
-  xy: 1304, 775
+  xy: 1164, 399
   size: 77, 121
   orig: 77, 121
   offset: 0, 0
   index: -1
 boost_slider
   rotate: false
-  xy: 1642, 680
+  xy: 1228, 674
   size: 62, 30
   split: 18, 18, 0, 30
   pad: 18, 18, -1, -1
@@ -29,23 +29,44 @@ boost_slider
   index: -1
 boost_slider_burn
   rotate: false
-  xy: 341, 383
+  xy: 1585, 932
   size: 54, 18
   orig: 54, 18
   offset: 0, 0
   index: -1
 boost_slider_fill
   rotate: false
-  xy: 1585, 934
+  xy: 341, 385
   size: 26, 16
   orig: 26, 16
   offset: 0, 0
   index: -1
 boost_slider_knob
   rotate: false
-  xy: 90, 7
+  xy: 2026, 922
   size: 20, 16
   orig: 20, 16
+  offset: 0, 0
+  index: -1
+breakable_L
+  rotate: false
+  xy: 1126, 674
+  size: 98, 98
+  orig: 98, 98
+  offset: 0, 0
+  index: -1
+breakable_L_T
+  rotate: false
+  xy: 1034, 524
+  size: 98, 146
+  orig: 98, 146
+  offset: 0, 0
+  index: -1
+breakable_R_T
+  rotate: false
+  xy: 1136, 524
+  size: 98, 146
+  orig: 98, 146
   offset: 0, 0
   index: -1
 button
@@ -86,14 +107,14 @@ button_small_down
   index: -1
 dude
   rotate: false
-  xy: 1034, 543
+  xy: 1941, 893
   size: 81, 127
   orig: 81, 127
   offset: 0, 0
   index: -1
 dude_white
   rotate: false
-  xy: 1517, 806
+  xy: 924, 318
   size: 116, 116
   orig: 116, 116
   offset: 0, 0
@@ -107,28 +128,28 @@ finger
   index: -1
 finger_touch
   rotate: false
-  xy: 1757, 910
+  xy: 2026, 980
   size: 20, 40
   orig: 20, 40
   offset: 0, 0
   index: -1
 g_achievements
   rotate: false
-  xy: 1522, 686
+  xy: 152, 8
   size: 116, 116
   orig: 116, 116
   offset: 0, 0
   index: -1
 g_controller
   rotate: false
-  xy: 1637, 834
+  xy: 272, 8
   size: 116, 116
   orig: 116, 116
   offset: 0, 0
   index: -1
 g_leaderboards
   rotate: false
-  xy: 1642, 714
+  xy: 1044, 404
   size: 116, 116
   orig: 116, 116
   offset: 0, 0
@@ -158,7 +179,7 @@ hand
   index: -1
 hearth
   rotate: false
-  xy: 284, 140
+  xy: 1044, 284
   size: 116, 116
   orig: 116, 116
   offset: 0, 0
@@ -172,7 +193,7 @@ hearth_small
   index: -1
 knob
   rotate: false
-  xy: 1757, 872
+  xy: 2026, 942
   size: 20, 34
   orig: 20, 34
   offset: 0, 0
@@ -186,14 +207,14 @@ music_down
   index: -1
 music_off
   rotate: false
-  xy: 1126, 644
+  xy: 1809, 892
   size: 128, 128
   orig: 128, 128
   offset: 0, 0
   index: -1
 music_on
   rotate: false
-  xy: 1119, 512
+  xy: 1386, 794
   size: 128, 128
   orig: 128, 128
   offset: 0, 0
@@ -205,16 +226,44 @@ obstacle
   orig: 146, 290
   offset: 0, 0
   index: -1
+pause_game
+  rotate: false
+  xy: 1518, 794
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: -1
+pause_game_down
+  rotate: false
+  xy: 1650, 822
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: -1
+pause_game_small
+  rotate: false
+  xy: 1228, 708
+  size: 64, 64
+  orig: 64, 64
+  offset: 0, 0
+  index: -1
+pause_game_small_down
+  rotate: false
+  xy: 1164, 211
+  size: 64, 64
+  orig: 64, 64
+  offset: 0, 0
+  index: -1
 rate
   rotate: false
-  xy: 152, 8
+  xy: 1164, 279
   size: 116, 116
   orig: 116, 116
   offset: 0, 0
   index: -1
 retry
   rotate: false
-  xy: 792, 318
+  xy: 924, 198
   size: 116, 116
   orig: 116, 116
   offset: 0, 0
@@ -249,35 +298,35 @@ rocket_on
   index: -1
 settings
   rotate: false
-  xy: 1809, 892
+  xy: 284, 128
   size: 128, 128
   orig: 128, 128
   offset: 0, 0
   index: -1
 settings_down
   rotate: false
-  xy: 1385, 794
+  xy: 1782, 760
   size: 128, 128
   orig: 128, 128
   offset: 0, 0
   index: -1
 shield
   rotate: false
-  xy: 912, 318
+  xy: 1044, 164
   size: 116, 116
   orig: 116, 116
   offset: 0, 0
   index: -1
 shield_small
   rotate: false
-  xy: 1708, 651
+  xy: 1232, 216
   size: 53, 59
   orig: 53, 59
   offset: 0, 0
   index: -1
 slider
   rotate: false
-  xy: 1522, 652
+  xy: 1164, 177
   size: 62, 30
   split: 21, 21, 0, 30
   pad: 21, 21, -1, -1
@@ -286,42 +335,42 @@ slider
   index: -1
 sound_down
   rotate: false
-  xy: 1258, 643
+  xy: 1650, 690
   size: 128, 128
   orig: 128, 128
   offset: 0, 0
   index: -1
 sound_off
   rotate: false
-  xy: 1251, 511
+  xy: 1782, 628
   size: 128, 128
   orig: 128, 128
   offset: 0, 0
   index: -1
 sound_on
   rotate: false
-  xy: 1390, 662
+  xy: 792, 306
   size: 128, 128
   orig: 128, 128
   offset: 0, 0
   index: -1
 touch
   rotate: false
-  xy: 2023, 956
+  xy: 1914, 824
   size: 4, 64
   orig: 4, 64
   offset: 0, 0
   index: -1
 white
   rotate: false
-  xy: 1385, 789
+  xy: 147, 85
   size: 1, 1
   orig: 1, 1
   offset: 0, 0
   index: -1
 window
   rotate: false
-  xy: 1034, 477
+  xy: 1296, 709
   size: 62, 62
   split: 25, 25, 25, 25
   orig: 62, 62

@@ -77,10 +77,28 @@ public class Obstacle implements Poolable, Position, ViewPortUpdate {
             type = Type.STATIC;
             break;
 		}
-//        init(x, botY, topY);
-//        this.botType = Type.MOVING;
-//        this.topType = Type.MOVING;
-//        type = Type.MOVING;
+    }
+
+    public void initTypeNoMoving() {
+        switch (Type.values()[MathUtils.random(Type.values().length-1)]) {
+            case SPIKE:
+                if (MathUtils.randomBoolean()){
+                    initType(Type.SPIKE, Type.STATIC);
+                } else {
+                    initType(Type.STATIC, Type.SPIKE);
+                }
+                type = Type.SPIKE;
+                break;
+            case HAMMER:
+                initType(Type.HAMMER, Type.HAMMER);
+                break;
+            case MOVING:
+            case STATIC:
+            default:
+                initType(Type.STATIC, Type.STATIC);
+                type = Type.STATIC;
+                break;
+        }
     }
 
     public void initType(Type botType, Type topType) {

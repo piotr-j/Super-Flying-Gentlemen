@@ -3,4 +3,6 @@
     <string name="purchase_restored">Zakupy przywrócone</string>
     <string name="restart_required">Zrestartuj aplikacje aby zastosować zmiany</string>
     <string name="get_premium_banner">Kup premium aby usunąć reklamy!</string>
+    <string name="not_supported_title">Urządzenie nie jest wspierane</string>
+    <string name="not_supported_text">Twoje urządzenie nie jest wspierane, OpenGL ES 2.0 jest wymagany.</string>
 </resources>

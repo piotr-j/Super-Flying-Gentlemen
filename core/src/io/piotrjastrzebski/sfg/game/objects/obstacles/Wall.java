@@ -31,11 +31,14 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.physics.box2d.Filter;
 import com.badlogic.gdx.utils.Pool;
 
+import io.piotrjastrzebski.sfg.game.objects.FixedUpdatable;
 import io.piotrjastrzebski.sfg.game.objects.Position;
+import io.piotrjastrzebski.sfg.game.objects.VariableUpdatable;
 import io.piotrjastrzebski.sfg.utils.Collision;
 import io.piotrjastrzebski.sfg.utils.Locator;
+import io.piotrjastrzebski.sfg.utils.Transform;
 
-public class Wall implements Position, Pool.Poolable{
+public class Wall implements Position, Pool.Poolable, FixedUpdatable, VariableUpdatable{
     private boolean isSmashed;
 
     private enum Shape {BOT_L, LEFT_T, RIGHT_T}
@@ -45,7 +48,7 @@ public class Wall implements Position, Pool.Poolable{
     private Array<WallPart> parts;
 
     public Wall() {
-        float maxHeight = Locator.getConfig().getObstacleGapSize().max;
+        float maxHeight = Locator.getConfig().getCurrentConfig().getObstacleGapSize().high();
         pos = new Vector2();
         parts = new Array<WallPart>();
         final World world = Locator.getWorld();
@@ -82,11 +85,21 @@ public class Wall implements Position, Pool.Poolable{
         isSmashed = false;
     }
 
-    public void update(float delta){
+    @Override
+    public void fixedUpdate() {
         if (!init)
             return;
         for(WallPart part: parts){
-            part.update(delta);
+            part.fixedUpdate();
+        }
+    }
+
+    @Override
+    public void variableUpdate(float delta, float alpha) {
+        if (!init)
+            return;
+        for(WallPart part: parts){
+            part.variableUpdate(delta, alpha);
         }
     }
 
@@ -119,7 +132,7 @@ public class Wall implements Position, Pool.Poolable{
         return isSmashed;
     }
 
-    public class WallPart {
+    public class WallPart implements FixedUpdatable, VariableUpdatable {
         private final static float FRICTION = 0.3f;
         private final static float DENSITY = 0.01f;
 
@@ -127,8 +140,10 @@ public class Wall implements Position, Pool.Poolable{
         private Body body;
         private float xOffset = 0;
         private float yOffset = 0;
+        private Transform transform;
 
         public WallPart(World world, Shape shape){
+            transform = new Transform();
             final BodyDef bodyDef = new BodyDef();
             bodyDef.type = BodyDef.BodyType.DynamicBody;
             bodyDef.position.set(-10, -20);
@@ -194,12 +209,21 @@ public class Wall implements Position, Pool.Poolable{
             graphic.setPosition(x - xOffset, y - yOffset);
             graphic.setRotation(0);
             body.setActive(true);
+            transform.init(body.getPosition(), body.getAngle()*MathUtils.radiansToDegrees);
         }
 
-        public void update(float delta){
-            final Vector2 pos = body.getPosition();
-            graphic.setPosition(pos.x - xOffset, pos.y - yOffset);
-            graphic.setRotation(body.getAngle() * MathUtils.radiansToDegrees);
+        @Override
+        public void fixedUpdate() {
+            transform.set(body.getPosition(), body.getAngle() * MathUtils.radiansToDegrees);
+        }
+
+        @Override
+        public void variableUpdate(float delta, float alpha) {
+            float lerpAngle = transform.getLerpAngle(alpha);
+            float lerpX = transform.getLerpX(alpha);
+            float lerpY = transform.getLerpY(alpha);
+            graphic.setPosition(lerpX-xOffset, lerpY-yOffset);
+            graphic.setRotation(lerpAngle);
         }
 
         public void draw(Batch batch){

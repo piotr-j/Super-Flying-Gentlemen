@@ -32,13 +32,15 @@ import io.piotrjastrzebski.sfg.game.objects.obstacles.endpoints.Hammer;
 import io.piotrjastrzebski.sfg.game.objects.obstacles.endpoints.Moving;
 import io.piotrjastrzebski.sfg.game.objects.obstacles.endpoints.Spike;
 import io.piotrjastrzebski.sfg.screen.GameScreen;
+import io.piotrjastrzebski.sfg.utils.ClampedRangeFloat;
 import io.piotrjastrzebski.sfg.utils.Config;
+import io.piotrjastrzebski.sfg.utils.ConfigData;
 import io.piotrjastrzebski.sfg.utils.Locator;
-import io.piotrjastrzebski.sfg.utils.Range;
 import io.piotrjastrzebski.sfg.utils.Settings;
 import io.piotrjastrzebski.sfg.utils.Utils;
 import io.piotrjastrzebski.sfg.utils.PoolUtils;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
@@ -51,7 +53,7 @@ public class GameWorld {
     private final int PICKUP_SPAWN_DISTANCE;
     private final float PICKUP_SPAWN_CHANGE;
     private final float BOOST_REFILL_TIME;
-    private final Range<Float> OBSTACLE_GAP;
+    private final ClampedRangeFloat OBSTACLE_GAP;
     private final Settings settings;
     private Array<Ground> ground;
 	private Array<Ceiling> ceilings;
@@ -64,7 +66,7 @@ public class GameWorld {
     private float lastCleanup;
 	
 	private int pickupDelay;
-    private Range<Float> obstRange;
+    private ClampedRangeFloat obstRange;
     private EventLoop events;
     private float worldWidth;
     private float worldHeight;
@@ -76,7 +78,7 @@ public class GameWorld {
 	public GameWorld(){
         settings = Locator.getSettings();
         events = Locator.getEvents();
-        final Config config = Locator.getConfig();
+        final ConfigData config = Locator.getConfig().getCurrentConfig();
         obstRange = config.getObstacleDistance();
         ground = new Array<Ground>();
         ceilings = new Array<Ceiling>();
@@ -88,10 +90,10 @@ public class GameWorld {
 
         worldWidth = GameScreen.VIEWPORT_WIDTH;
         worldHeight = GameScreen.VIEWPORT_HEIGHT;
-        PICKUP_SPAWN_CHANGE = config.getPickupSpawnChance();
-        PICKUP_SPAWN_DISTANCE = config.getPickupMinSpawnDistance();
+        PICKUP_SPAWN_CHANGE = config.getPickupSpawnChance().value();
+        PICKUP_SPAWN_DISTANCE = config.getPickupMinSpawnDistance().value();
         OBSTACLE_GAP = config.getObstacleGapSize();
-        BOOST_REFILL_TIME = config.getPlayerDashDelay();
+        BOOST_REFILL_TIME = config.getPlayerDashDelay().value();
 	}
 	
 	public void init(float camX){
@@ -156,7 +158,7 @@ public class GameWorld {
 	private void populateInit(float lastX){
 		final Obstacle o = obtainObstacle();
         // first one biggest possible gap
-        float gap = OBSTACLE_GAP.max;
+        float gap = OBSTACLE_GAP.high();
         // first one in middle
         float centerY = (MIN_Y + MAX_Y)/2;
         float botY = centerY - gap*0.5f;
@@ -164,7 +166,7 @@ public class GameWorld {
 
         o.initType(Part.Type.STATIC, Part.Type.STATIC);
         // 0.5 so its not flush with ground / ceiling
-        o.init(lastX, botY + 0.5f, topY - 0.5f);
+        o.init(lastX, botY, topY);
         obstacles.add(o);
 
 		// ground and ceiling going behind
@@ -187,13 +189,19 @@ public class GameWorld {
 			ceilings.add(c);
 		}
 	}
-	
+
+    private final static float MIN_MOV_DST = 10.0f;
+    private final static float MIN_PICKUP_DST = 8.0f;
+
 	private void populateNext(float lastX, float lastY, float lastTopY, float lastBotY){
         pickupDelay++;
         float distance = Utils.randomRange(obstRange);
 
 		final Obstacle o = obtainObstacle();
         obstacles.add(o);
+        if (distance < MIN_MOV_DST){
+            o.initTypeNoMoving();
+        }
         float gap = Utils.randomRange(OBSTACLE_GAP);
         if (o.getType() == Part.Type.MOVING){
             // slightly more than min gap size
@@ -202,17 +210,21 @@ public class GameWorld {
         float halfGap = gap*0.5f;
         float centerY = MathUtils.round(MathUtils.random(MIN_Y+halfGap, MAX_Y-halfGap));
 
-        centerY = MathUtils.clamp(centerY, lastY-MAX_DIFF, lastY+MAX_DIFF);
-        float botY = Math.max(centerY-halfGap, MIN_Y);
-        float topY = Math.min(centerY+halfGap, MAX_Y);
-        // 0.5 so its not flush with ground / ceiling
-        o.init(lastX+distance, botY + 0.5f, topY - 0.5f);
+        // absolute min 4, max 25
+        // 1 more height per 2 distance
+        float diff = 1f + (distance-4)/2;
+        diff = Math.min(diff, MAX_DIFF);
+        centerY = MathUtils.clamp(centerY, lastY-diff, lastY+diff);
+        // +- 0.5 so obstacle isnt flush with ground/ceiling
+        float botY = Math.max(centerY-halfGap, MIN_Y+0.5f);
+        float topY = Math.min(centerY+halfGap, MAX_Y-0.5f);
+        o.init(lastX+distance, botY, topY);
 
         // moving obstacles needs more vertical space
-        float groundMaxY = Math.min(lastBotY, botY);
+        float groundMaxY = Math.min(lastBotY, botY-0.5f);
         float groundY = MathUtils.round(MathUtils.random(MIN_Y, groundMaxY));
 
-        float ceilingMinY = Math.max(lastTopY, topY);
+        float ceilingMinY = Math.max(lastTopY, topY+0.5f);
         float ceilingY = MathUtils.round(MathUtils.random(MAX_Y, ceilingMinY));
 
 		final Ground g = obtainGround();
@@ -241,19 +253,20 @@ public class GameWorld {
                 final Wall w = obtainWall();
                 w.init(lastX + distance, botY, gap);
                 walls.add(w);
+                events.queueEvent(EventType.SHOW_BREAKABLE_TUT, o.getPos());
             } else {
                 // another 2 in a row for boost
                 o.disableScore();
 
                 Obstacle o2 = obtainObstacle();
                 o2.initType(o.getBotType(), o.getTopType());
-                o2.init(lastX + distance + 4, botY + 0.5f, topY - 0.5f);
+                o2.init(lastX + distance + 4, botY, topY);
                 o2.disableScore();
                 obstacles.add(o2);
 
                 o2 = obtainObstacle();
                 o2.initType(o.getBotType(), o.getTopType());
-                o2.init(lastX + distance + 8, botY + 0.5f, topY - 0.5f);
+                o2.init(lastX + distance + 8, botY, topY);
                 obstacles.add(o2);
 
                 final Ground g2 = obtainGround();
@@ -264,13 +277,15 @@ public class GameWorld {
                         false
                 );
                 ground.add(g2);
+                events.queueEvent(EventType.SHOW_BOOST_TUT, o.getPos());
             }
-            events.queueEvent(EventType.SHOW_BOOST_TUT, o.getPos());
         } else {
             obstSinceLastBoost += 1;
         }
 		// 1/4 chance to spawn a pickup and at least 3 obstacles since last
-		if (MathUtils.random() <= PICKUP_SPAWN_CHANGE && pickupDelay > PICKUP_SPAWN_DISTANCE){
+		if (MathUtils.random() <= PICKUP_SPAWN_CHANGE
+                && pickupDelay > PICKUP_SPAWN_DISTANCE
+                && distance >= MIN_PICKUP_DST){
 			// 3 for width of obstacles
 			final float pickupOffset = 5 + (int) (MathUtils.random()*(distance-10));
 			final Pickup p = obtainPickup();
@@ -294,6 +309,9 @@ public class GameWorld {
         for (int i = 0; i < pickupDebris.size; i++) {
             pickupDebris.get(i).fixedUpdate();
         }
+        for (int i = 0; i < walls.size; i++) {
+            walls.get(i).fixedUpdate();
+        }
     }
 
 	public void variableUpdate(float delta, float alpha, float camX){
@@ -310,7 +328,7 @@ public class GameWorld {
             ground.get(i).update(delta, camX);
         }
         for (int i = 0; i < walls.size; i++) {
-            walls.get(i).update(delta);
+            walls.get(i).variableUpdate(delta, alpha);
         }
         for (int i = 0; i < pickupDebris.size; i++) {
             pickupDebris.get(i).variableUpdate(delta, alpha);
@@ -321,7 +339,11 @@ public class GameWorld {
                 final PickupDebris debris = obtainPickupDebris();
                 debris.init(p.getPos());
                 pickupDebris.add(debris);
-                events.queueEvent(EventType.SPAWN_EXPLOSION, Pools.obtain(Vector2.class).set(p.getPos()));
+                if (p.getType() == Pickup.Type.TOXIC){
+                    events.queueEvent(EventType.SPAWN_TOXIC_CLOUD, Pools.obtain(Vector2.class).set(p.getPos()));
+                } else {
+                    events.queueEvent(EventType.SPAWN_EXPLOSION, Pools.obtain(Vector2.class).set(p.getPos()));
+                }
                 Pools.free(p);
                 pickups.removeValue(p, true);
             }

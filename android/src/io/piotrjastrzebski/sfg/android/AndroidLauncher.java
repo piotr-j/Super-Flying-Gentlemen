@@ -18,14 +18,19 @@
 
 package io.piotrjastrzebski.sfg.android;
 
+import android.app.ActivityManager;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.ConfigurationInfo;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -46,28 +51,67 @@ public class AndroidLauncher extends AndroidApplication {
     @Override
 	protected void onCreate (Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+        // fix for launcher icon starting new activity on top of old one
+        if ((getIntent().getFlags() & Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT) != 0) {
+            finish();
+            return;
+        }
 
-		AndroidApplicationConfiguration config = new AndroidApplicationConfiguration();
-		config.hideStatusBar = true;
-		config.useAccelerometer = false;
-		config.useCompass = false;
-		config.useImmersiveMode = getSharedPreferences(SFGApp.PREFS, Context.MODE_PRIVATE)
-                .getBoolean(Settings.IMMERSIVE_MODE_STATE, true);
+        if (isSupported()){
+            requestWindowFeature(Window.FEATURE_NO_TITLE);
+            getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
 
-        Crittercism.initialize(getApplicationContext(), getString(R.string.crittercism_id));
+            AndroidApplicationConfiguration config = new AndroidApplicationConfiguration();
+            config.hideStatusBar = true;
+            config.useAccelerometer = false;
+            config.useCompass = false;
+            config.useImmersiveMode = getSharedPreferences(SFGApp.PREFS, Context.MODE_PRIVATE)
+                    .getBoolean(Settings.IMMERSIVE_MODE_STATE, true);
 
-        actionResolver = new AndroidActionResolver(this);
+            Crittercism.initialize(getApplicationContext(), getString(R.string.crittercism_id));
 
-        // initialize for view so we can show add on top
-        layout = new RelativeLayout(this);
-        SFGApp app = new SFGApp(actionResolver);
-        View gameView = initializeForView(app, config);
-        layout.addView(gameView);
-        addPremiumBanner(layout);
-        setContentView(layout);
+            actionResolver = new AndroidActionResolver(this);
+
+            // initialize for view so we can show add on top
+            layout = new RelativeLayout(this);
+            SFGApp app = new SFGApp(actionResolver);
+            View gameView = initializeForView(app, config);
+            layout.addView(gameView);
+            addPremiumBanner(layout);
+            setContentView(layout);
+        }
+    }
+
+    private boolean isSupported() {
+        final ActivityManager activityManager =
+                (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        final ConfigurationInfo configurationInfo =
+                activityManager.getDeviceConfigurationInfo();
+        final boolean supportsEs2 = configurationInfo.reqGlEsVersion >= 0x20000;
+
+        if (!supportsEs2){
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage(R.string.not_supported_text)
+                    .setTitle(R.string.not_supported_title)
+                    .setOnCancelListener(new DialogInterface.OnCancelListener() {
+                        @Override
+                        public void onCancel(DialogInterface dialog) {
+                            finish();
+                        }
+                    })
+                    .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            finish();
+                        }
+                    });
+
+            final AlertDialog d = builder.create();
+
+            d.show();
+        }
+        return supportsEs2;
     }
 
     private void addPremiumBanner(RelativeLayout layout){
@@ -99,7 +143,8 @@ public class AndroidLauncher extends AndroidApplication {
     @Override
     public void onConfigurationChanged(Configuration config) {
         super.onConfigurationChanged(config);
-        actionResolver.justRotated();
+        if (actionResolver != null)
+            actionResolver.justRotated();
     }
 
     public void setAdView(AdView newAdView){
@@ -121,37 +166,43 @@ public class AndroidLauncher extends AndroidApplication {
     @Override
     public void onStart(){
         super.onStart();
-        actionResolver.onStart();
+        if (actionResolver != null)
+            actionResolver.onStart();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        actionResolver.onResume();
+        if (actionResolver != null)
+            actionResolver.onResume();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        actionResolver.onPause();
+        if (actionResolver != null)
+            actionResolver.onPause();
     }
 
     @Override
     public void onStop(){
         super.onStop();
-        actionResolver.onStop();
+        if (actionResolver != null)
+            actionResolver.onStop();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        actionResolver.onDestroy();
+        if (actionResolver != null)
+            actionResolver.onDestroy();
     }
 
     @Override
     public void onActivityResult(int request, int response, Intent data) {
         super.onActivityResult(request, response, data);
-        actionResolver.onActivityResult(request, response, data);
+        if (actionResolver != null)
+            actionResolver.onActivityResult(request, response, data);
     }
 
 }

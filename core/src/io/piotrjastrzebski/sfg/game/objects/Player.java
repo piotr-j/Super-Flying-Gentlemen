@@ -24,12 +24,12 @@ import io.piotrjastrzebski.sfg.utils.Collision;
 import io.piotrjastrzebski.sfg.utils.Config;
 import box2dLight.ConeLight;
 import box2dLight.PointLight;
+import io.piotrjastrzebski.sfg.utils.ConfigData;
 import io.piotrjastrzebski.sfg.utils.Locator;
 import io.piotrjastrzebski.sfg.utils.Transform;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Batch;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.CircleShape;
@@ -40,6 +40,8 @@ import com.esotericsoftware.spine.SkeletonRenderer;
 public class Player implements FixedUpdatable, VariableUpdatable {
     // max touches per second
     private final static float MIN_TOUCH_DELAY = 1.0f/2.0f; // 2 per second
+
+
 	private Body body;
     // remaining delay of the jump
 	private float jumpDelay;
@@ -51,14 +53,21 @@ public class Player implements FixedUpdatable, VariableUpdatable {
 	private float dashTimer;
 	private float dashDelayTimer;
 	private int lives = 0;
-	private Config cfg;
-	// cache values that are needed each frame, calls are expensive
-	private final float dashTime;
-	private final float flySpeed;
-	private final float maxFlySpeed;
-	private final float flyImpMult;
-	private final float dashImpMult;
-	
+	private ConfigData cfg;
+
+    // cache values that are needed each frame, calls are expensive
+    private final float DASH_TIME;
+    private final float FLY_SPEED;
+    private final float FLY_MAX_SPEED;
+    private final float FLY_IMPULSE;
+    private final float DASH_DELAY;
+    private final float DASH_IMPULSE;
+    private final int INIT_LIVES;
+    private final int INIT_SHIELDS;
+    private final float JUMP_DELAY;
+    private final float JUMP_IMPULSE;
+    private final float SCALE;
+
 	private ConeLight coneLight;
 	private PointLight pointLight;
 	
@@ -76,7 +85,7 @@ public class Player implements FixedUpdatable, VariableUpdatable {
 	 * Initialize a player, it is represented as a ball in box2d world
      */
 	public Player(){
-		this.cfg = Locator.getConfig();
+		this.cfg = Locator.getConfig().getCurrentConfig();
         transform = new Transform();
 
 		pointLight = new PointLight(Locator.getRayHandler(), 8, Color.WHITE, 3, 0, 0);
@@ -88,21 +97,28 @@ public class Player implements FixedUpdatable, VariableUpdatable {
 				0, 0, 0, 20);
 		coneLight.setColor(1, 0.8f, 0.3f, 1);
 		
-		lives = cfg.getPlayerMaxLives();
 		// cache values that are needed each frame, calls are expensive
-		dashTime = cfg.getPlayerDashTime();
-		flySpeed = cfg.getPlayerFlySpeed();
-		maxFlySpeed = cfg.getPlayerMaxFlySpeed();
-		flyImpMult = cfg.getPlayerFlyImpMult();
-		dashImpMult = cfg.getPlayerDashMult();
-		
+		DASH_TIME = cfg.getPlayerDashTime().value();
+		FLY_SPEED = cfg.getPlayerFlySpeed().value();
+		FLY_MAX_SPEED = cfg.getPlayerFlyMaxSpeed().value();
+		FLY_IMPULSE = cfg.getPlayerFlyImpulse().value();
+		DASH_IMPULSE = cfg.getPlayerDashImpulse().value();
+
+        JUMP_DELAY = cfg.getPlayerJumpDelay().value();
+        JUMP_IMPULSE = cfg.getPlayerJumpImpulse().value();
+        DASH_DELAY = cfg.getPlayerDashDelay().value();
+        INIT_LIVES = cfg.getPlayerInitLives().value();
+        INIT_SHIELDS = cfg.getPlayerInitShields().value();
+
+        SCALE = cfg.getPlayerScale().value();
+
 		BodyDef bodyDef = new BodyDef();
 		bodyDef.type = BodyType.DynamicBody;
 		bodyDef.fixedRotation = true;
 
 		body = Locator.getWorld().createBody(bodyDef);
         CircleShape circle = new CircleShape();
-		circle.setRadius(0.9f);
+		circle.setRadius(0.6f*SCALE);
 
 		FixtureDef fixtureDef = new FixtureDef();
 		fixtureDef.shape = circle;
@@ -114,13 +130,13 @@ public class Player implements FixedUpdatable, VariableUpdatable {
 		
 		body.createFixture(fixtureDef);
 		body.setUserData(this);
-		body.setLinearDamping(cfg.getPlayerLinearDampening());
+		body.setLinearDamping(cfg.getPlayerLinearDampening().value());
 		// mass is used for various impulse strength calculation
 		mass = body.getMass();
 		circle.dispose();
 		
-		animation = new PlayerAnimation();
-        ragDoll = new PlayerRagDoll(animation.getSkeleton());
+		animation = new PlayerAnimation(SCALE);
+        ragDoll = new PlayerRagDoll(animation.getSkeleton(), SCALE);
         parachute = new Parachute();
 	}
 
@@ -132,8 +148,8 @@ public class Player implements FixedUpdatable, VariableUpdatable {
 		// apply initial impulse so player moves on spawn
 		body.applyLinearImpulse(mass*3f, 0, 0, 0, true);
 		
-		lives = cfg.getPlayerMaxLives();
-        shields = cfg.getPlayerShields();
+		lives = INIT_LIVES;
+        shields = INIT_SHIELDS;
 		isAlive = true;
 		isDashing = false;
 		jumpDelay = 0;
@@ -165,10 +181,10 @@ public class Player implements FixedUpdatable, VariableUpdatable {
 		if (justSpawned){
 			clearJustSpawned();
 		}
-		jumpDelay = cfg.getPlayerJumpDelay();
+		jumpDelay = JUMP_DELAY;
 		
 		final float vY = body.getLinearVelocity().y;
-		float imp = cfg.getPlayerJumpImpulse();
+		float imp = JUMP_IMPULSE;
 		// counteract the gravity if falling down and limit the max jump speed
 		imp += -vY;
 		body.applyLinearImpulse(0.0f, mass*imp, 0.0f, 0.0f, true);
@@ -182,10 +198,10 @@ public class Player implements FixedUpdatable, VariableUpdatable {
 		if (justSpawned){
 			clearJustSpawned();
 		}
-		dashDelayTimer = cfg.getPlayerDashDelay();
+		dashDelayTimer = DASH_DELAY;
 		isDashing = true;
 		// vX ~20 + default speed
-		body.applyLinearImpulse(mass*dashImpMult, 0.0f, 0.0f, 0.0f, true);		
+		body.applyLinearImpulse(mass* DASH_IMPULSE, 0.0f, 0.0f, 0.0f, true);
 		animation.boost();
 	}
 
@@ -202,11 +218,11 @@ public class Player implements FixedUpdatable, VariableUpdatable {
             // slow at spawn
             if (justSpawned){
                 body.applyLinearImpulse(0, -mass*vY*0.95f, 0.0f, 0.0f, true);
-            } else if (Math.abs(vX) <= flySpeed){
+            } else if (Math.abs(vX) <= FLY_SPEED){
                 // vX ~5
-                float impX = mass * flyImpMult * SFGGame.STEP_TIME;
+                float impX = mass * FLY_IMPULSE * SFGGame.STEP_TIME;
                 body.applyLinearImpulse(impX, 0.0f, 0.0f, 0.0f, true);
-            } else if (Math.abs(vX) > maxFlySpeed){
+            } else if (Math.abs(vX) > FLY_MAX_SPEED){
                 float impX = -mass * vX * 10 * SFGGame.STEP_TIME;
                 body.applyLinearImpulse(impX, 0.0f, 0.0f, 0.0f, true);
             }
@@ -239,10 +255,10 @@ public class Player implements FixedUpdatable, VariableUpdatable {
 
             if (isDashing){
                 dashTimer+=delta;
-                if (dashTimer >= dashTime){
+                if (dashTimer >= DASH_TIME){
                     isDashing = false;
                     dashTimer = 0;
-                    dashDelayTimer = cfg.getPlayerDashDelay();
+                    dashDelayTimer = DASH_DELAY;
                 }
             }
 
@@ -304,7 +320,7 @@ public class Player implements FixedUpdatable, VariableUpdatable {
 
 	public float getBoostDelay() {
         if (isDashing)
-            return cfg.getPlayerDashDelay();
+            return DASH_DELAY;
 		return dashDelayTimer;
 	}
 	public float subBoostDelay(float boostToAdd) {
@@ -346,6 +362,10 @@ public class Player implements FixedUpdatable, VariableUpdatable {
             return true;
         }
         return false;
+    }
+
+    public boolean hasShield(){
+        return hasShields;
     }
 
     public Transform getTransform() {

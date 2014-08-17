@@ -18,18 +18,35 @@
 
 package io.piotrjastrzebski.sfg.utils;
 
-public class Utils {
-    /**
-     * Return rounded number from given range
-     */
-    public static float randomRange(final ClampedRangeFloat range){
-        return Math.round(range.low() + Math.random() * ((range.high() - range.low() +0.5f)));
+import com.badlogic.gdx.math.MathUtils;
+
+public class ClampedRangeFloat extends ClampedRange<Float> {
+    public ClampedRangeFloat(){
+        this(Float.MIN_VALUE, Float.MAX_VALUE);
     }
 
-    /**
-     * Return number from given range where [min, max]
-     */
-    public static int randomRange(final ClampedRangeInt range){
-        return (int) (range.low() + Math.random() * (range.high() - range.low() +0.5f));
+    public ClampedRangeFloat(float min, float max){
+        this(min, max, 1.0f);
     }
+
+    public ClampedRangeFloat(float min, float max, float step){
+        super(Type.FLOAT, min, max, step);
+    }
+
+    public void set(Float low, Float high){
+        this.low = MathUtils.clamp(low, min, max);
+        this.high = MathUtils.clamp(high, min, max);
+        dirty = true;
+    }
+
+    public void low(Float low){
+        this.low = MathUtils.clamp(low, min, max);
+        dirty = true;
+    }
+
+    public void high(Float high){
+        this.high = MathUtils.clamp(high, min, max);
+        dirty = true;
+    }
+
 }

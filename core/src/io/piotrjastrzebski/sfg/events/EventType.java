@@ -40,6 +40,7 @@ public class EventType {
     public static final int SPAWN_EXPLOSION = 30;
     public static final int SPAWN_BLOOD = 31;
     public static final int SPAWN_TOXIC_CLOUD = 32;
+    public static final int SPAWN_SHIELD_BREAK = 33;
 
     public static final int PLAY_MUSIC = 40;
     public static final int STOP_MUSIC = 41;
@@ -49,6 +50,8 @@ public class EventType {
     public static final int TOGGLE_SOUND = 44;
 
     public static final int SHOW_BOOST_TUT = 50;
+    public static final int SHOW_BREAKABLE_TUT = 51;
+
     public final static int PICKUP_TOUCHED = 60;
     public final static int PICKUP_DESTROYED = 61;
 }

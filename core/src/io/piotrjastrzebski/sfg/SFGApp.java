@@ -22,6 +22,7 @@ import io.piotrjastrzebski.sfg.events.EventLoop;
 import io.piotrjastrzebski.sfg.game.PlayerStats;
 import io.piotrjastrzebski.sfg.screen.SplashScreen;
 import io.piotrjastrzebski.sfg.utils.Assets;
+import io.piotrjastrzebski.sfg.utils.Config;
 import io.piotrjastrzebski.sfg.utils.Locator;
 import io.piotrjastrzebski.sfg.utils.Settings;
 import io.piotrjastrzebski.sfg.utils.SoundManager;
@@ -47,8 +48,9 @@ public class SFGApp extends Game {
     private ActionResolver actionResolver;
 	private Settings settings;
     private EventLoop eventLoop;
+    private Config config;
 
-	public SFGApp(ActionResolver actionResolver){
+    public SFGApp(ActionResolver actionResolver) {
         this.actionResolver = actionResolver;
         Locator.provideApp(this);
         fps = new FPSLogger();
@@ -69,6 +71,8 @@ public class SFGApp extends Game {
         Locator.providePlayerStats(playerStats);
         settings = new Settings();
         Locator.provideSettings(settings);
+        config = new Config();
+        Locator.provideConfig(config);
     }
 
     @Override
@@ -77,7 +81,7 @@ public class SFGApp extends Game {
         initLocator();
     }
 
-    private void initLocator(){
+    private void initLocator() {
         Locator.provideApp(this);
         Locator.provideActionResolver(actionResolver);
         Locator.provideAssets(assets);

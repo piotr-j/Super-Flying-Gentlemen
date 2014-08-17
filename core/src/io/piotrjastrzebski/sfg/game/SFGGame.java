@@ -26,6 +26,7 @@ import io.piotrjastrzebski.sfg.game.objects.ExplosionLight;
 import io.piotrjastrzebski.sfg.game.objects.Pickup;
 import io.piotrjastrzebski.sfg.game.objects.Player;
 import io.piotrjastrzebski.sfg.game.objects.Rocket;
+import io.piotrjastrzebski.sfg.game.objects.ShieldBreak;
 import io.piotrjastrzebski.sfg.game.objects.obstacles.Obstacle;
 import io.piotrjastrzebski.sfg.game.objects.obstacles.ScoreSensor;
 import io.piotrjastrzebski.sfg.game.objects.obstacles.Wall;
@@ -39,6 +40,7 @@ import io.piotrjastrzebski.sfg.utils.PoolUtils;
 import io.piotrjastrzebski.sfg.game.ContactDispatcher.PlayerContactPool.PlayerContact;
 import box2dLight.Light;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.ParticleEffectPool;
@@ -64,9 +66,13 @@ public class SFGGame implements EventListener {
 	private ParticleEffectPool toxicParticles;
 	private Array<PooledEffect> effects;
 	private Array<ExplosionLight> explosionLight;
+	private Array<ShieldBreak> shieldBreaks;
 	private Player player;
 	private Camera camera;
 	private boolean isRunning = true;
+	private boolean isResuming = false;
+    private float resumeTimer;
+    private final static  float RESUME_TIME = 1.5f;
 
 	private float actualViewportWidth;
 	private float actualViewportHeight;
@@ -109,6 +115,7 @@ public class SFGGame implements EventListener {
 		
 		rockets = new Array<Rocket>();
         explosionLight = new Array<ExplosionLight>();
+        shieldBreaks = new Array<ShieldBreak>();
 
         player = new Player();
 		gameWorld = new GameWorld();
@@ -127,6 +134,7 @@ public class SFGGame implements EventListener {
         events.register(this, EventType.SPAWN_EXPLOSION);
         events.register(this, EventType.SPAWN_BLOOD);
         events.register(this, EventType.SPAWN_TOXIC_CLOUD);
+        events.register(this, EventType.SPAWN_SHIELD_BREAK);
     }
 
     private void unRegisterEvents(){
@@ -140,6 +148,7 @@ public class SFGGame implements EventListener {
         events.unregister(this, EventType.SPAWN_EXPLOSION);
         events.unregister(this, EventType.SPAWN_BLOOD);
         events.unregister(this, EventType.SPAWN_TOXIC_CLOUD);
+        events.unregister(this, EventType.SPAWN_SHIELD_BREAK);
     }
 
 	public void reset(){
@@ -166,7 +175,6 @@ public class SFGGame implements EventListener {
                 0,
                 actualViewportHeight * 0.75f,
                 Locator.getPlayerStats().getPlayerSkin());
-		camera.position.x = getPlayerX() + GameScreen.PLAYER_OFFSET;
         events.queueEvent(EventType.PLAYER_RESPAWNED);
         events.queueEvent(EventType.PLAYER_ALIVE, true);
         events.queueEvent(EventType.PLAYER_LIVES_CHANGED, player.getLives());
@@ -192,12 +200,28 @@ public class SFGGame implements EventListener {
 	}
 
 	public void resumeGame(){
-		isRunning = true;
+        isResuming = true;
 	}
 
+    private void finishResuming(){
+        isRunning = true;
+        isResuming = false;
+        resumeTimer = 0;
+    }
+
 	public void update(float delta){
-		if (!isRunning)
+		if (!(isRunning || isResuming))
 			return;
+        // slow down game if we are resuming
+        if (isResuming){
+            resumeTimer += delta;
+            if (resumeTimer >= RESUME_TIME) {
+                finishResuming();
+            } else {
+                delta *= resumeTimer/RESUME_TIME;
+            }
+        }
+
         accumulator += delta;
         int steps = 0;
         while (STEP_TIME < accumulator && MAX_STEPS > steps){
@@ -250,9 +274,18 @@ public class SFGGame implements EventListener {
             }
         }
 
+        for (Iterator<ShieldBreak> iterator = shieldBreaks.iterator(); iterator.hasNext();) {
+            final ShieldBreak sb = iterator.next();
+            sb.variableUpdate(delta, alpha);
+            if (sb.isComplete()) {
+                Pools.free(sb);
+                iterator.remove();
+            }
+        }
+
         if (isPlayerTouching){
             if (player.touched()) {
-                events.queueEvent(EventType.SPAWN_BLOOD, obtainVec2().set(
+                events.queueEvent(EventType.SPAWN_BLOOD, obtainVec2(
                         getPlayerX(),
                         getPlayerY()
                 ));
@@ -299,6 +332,13 @@ public class SFGGame implements EventListener {
         freeVec2(pos);
     }
 
+    private void spawnShieldBreak(Vector2 pos) {
+        final ShieldBreak shieldBreak = Pools.obtain(ShieldBreak.class);
+        shieldBreak.init(pos.x, pos.y);
+        shieldBreaks.add(shieldBreak);
+        freeVec2(pos);
+    }
+
 	public void draw(Batch batch){
         batch.begin();
 		gameWorld.draw(batch, skeletonRenderer);
@@ -310,6 +350,9 @@ public class SFGGame implements EventListener {
 		    PooledEffect effect = effects.get(i);
 		    effect.draw(batch);
 		}
+        for (int i = 0; i < shieldBreaks.size; i++) {
+            shieldBreaks.get(i).draw(batch, skeletonRenderer);
+        }
         batch.end();
 	}
 	
@@ -320,7 +363,7 @@ public class SFGGame implements EventListener {
             final Rocket r = (Rocket) e.getData();
             if (!r.isExploded()) {
                 r.explode();
-                events.queueEvent(EventType.SPAWN_EXPLOSION, obtainVec2().set(
+                events.queueEvent(EventType.SPAWN_EXPLOSION, obtainVec2(
                         r.getTransform().getLerpX(alpha),
                         r.getTransform().getLerpY(alpha)
                 ));
@@ -354,6 +397,9 @@ public class SFGGame implements EventListener {
         case EventType.SPAWN_TOXIC_CLOUD:
             spawnToxicCloud((Vector2) e.getData());
             break;
+        case EventType.SPAWN_SHIELD_BREAK:
+            spawnShieldBreak((Vector2) e.getData());
+            break;
         default: break;
 		}
 	}
@@ -373,9 +419,11 @@ public class SFGGame implements EventListener {
                     playerAddShields((int) pickup.getValue());
                     break;
                 case TOXIC:
-                    events.queueEvent(EventType.SPAWN_TOXIC_CLOUD, obtainVec2().set(pickup.getPos()));
+                    events.queueEvent(EventType.SPAWN_TOXIC_CLOUD, obtainVec2(pickup.getPos()));
                     int damage = (int) pickup.getValue();
                     int shields = player.getShields();
+                    if (shields > 0)
+                        events.queueEvent(EventType.SPAWN_SHIELD_BREAK, obtainVec2(pickup.getPos()));
                     while (shields > 0 && damage > 0){
                         shields--;
                         damage--;
@@ -389,7 +437,7 @@ public class SFGGame implements EventListener {
                             damage--;
                         }
                         player.setLives(lives);
-                        events.queueEvent(EventType.SPAWN_BLOOD, obtainVec2().set(
+                        events.queueEvent(EventType.SPAWN_BLOOD, obtainVec2(
                                 getPlayerX(),
                                 getPlayerY()
                         ));
@@ -416,27 +464,30 @@ public class SFGGame implements EventListener {
             return;
         }
         final Object o = playerContact.content();
-        final Vector2 contactPos = obtainVec2().set(playerContact.position());
+        final Vector2 contactPos = playerContact.position();
 
         if (o instanceof Wall){
             final Wall wall = (Wall) o;
-            events.queueEvent(EventType.SPAWN_EXPLOSION, contactPos);
+            events.queueEvent(EventType.SPAWN_EXPLOSION, obtainVec2(contactPos));
             if (player.isDashing()){
                 wall.smash();
             } else {
                 if (!wall.isSmashed()) {
                     if (player.touched()){
-                        events.queueEvent(EventType.SPAWN_BLOOD, contactPos);
+                        events.queueEvent(EventType.SPAWN_BLOOD, obtainVec2(contactPos));
                     }
                 }
             }
         } else if (o instanceof Obstacle){
             final Obstacle obst = (Obstacle)o;
-            if (player.useShield()) {
+            if (player.hasShield()){
+                obst.execute(false);
+            } else if (player.useShield()) {
                 obst.execute(false);
                 events.queueEvent(EventType.PLAYER_SHIELDS_CHANGED, player.getShields());
+                events.queueEvent(EventType.SPAWN_SHIELD_BREAK, obtainVec2(contactPos));
             } else {
-                events.queueEvent(EventType.SPAWN_BLOOD, contactPos);
+                events.queueEvent(EventType.SPAWN_BLOOD, obtainVec2(contactPos));
                 obst.execute(true);
                 if (config.getDifficulty() != Config.Difficulty.BABY){
                     switch (obst.getType()) {
@@ -449,7 +500,7 @@ public class SFGGame implements EventListener {
                         default:
                             break;
                     }
-                    events.queueEvent(EventType.SPAWN_EXPLOSION, contactPos);
+                    events.queueEvent(EventType.SPAWN_EXPLOSION, obtainVec2(contactPos));
                     events.queueEvent(EventType.PLAYER_DIED);
                     events.queueEvent(EventType.PLAY_SOUND, SoundManager.DEATH);
                     player.kill();
@@ -458,11 +509,11 @@ public class SFGGame implements EventListener {
                 }
             }
         } else if (player.touched()){
-            events.queueEvent(EventType.SPAWN_BLOOD, contactPos);
+            events.queueEvent(EventType.SPAWN_BLOOD, obtainVec2(contactPos));
             events.queueEvent(EventType.PLAY_SOUND, SoundManager.HURT);
         }
         if (player.isDead()){
-            events.queueEvent(EventType.SPAWN_EXPLOSION, contactPos);
+            events.queueEvent(EventType.SPAWN_EXPLOSION, obtainVec2(contactPos));
             events.queueEvent(EventType.PLAYER_DIED);
             events.queueEvent(EventType.PLAY_SOUND, SoundManager.DEATH);
 			player.kill();
@@ -485,10 +536,11 @@ public class SFGGame implements EventListener {
 	public void tap(){
 		if (player.isDead())
             return;
+        finishResuming();
         player.jump();
         final Rocket rocket = Pools.obtain(Rocket.class);
         // magic values so the spawn point is correct
-        rocket.init(getPlayerX(), getPlayerY()-2.75f);
+        rocket.init(getPlayerX(), getPlayerY() - 2.75f);
         rockets.add(rocket);
         events.queueEvent(EventType.PLAY_SOUND, SoundManager.ROCKET);
 	}
@@ -496,6 +548,7 @@ public class SFGGame implements EventListener {
 	public void swipe(){
         if(player.isDead())
             return;
+        finishResuming();
         player.dashForward();
         if (player.isDashing()){
             events.queueEvent(EventType.PLAY_SOUND, SoundManager.BOOST);
@@ -549,11 +602,16 @@ public class SFGGame implements EventListener {
         unRegisterEvents();
         PoolUtils.dispose(Rocket.class, rockets);
         PoolUtils.dispose(ExplosionLight.class, explosionLight);
+        PoolUtils.dispose(ShieldBreak.class, shieldBreaks);
         gameWorld.dispose();
     }
 
-    private Vector2 obtainVec2(){
-        return Pools.obtain(Vector2.class);
+    private Vector2 obtainVec2(Vector2 vec){
+        return Pools.obtain(Vector2.class).set(vec);
+    }
+
+    private Vector2 obtainVec2(float x, float y){
+        return Pools.obtain(Vector2.class).set(x, y);
     }
 
     private void freeVec2(Vector2 vec){

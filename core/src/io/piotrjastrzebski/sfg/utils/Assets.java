@@ -29,6 +29,7 @@ import com.badlogic.gdx.graphics.g2d.ParticleEffectPool;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.utils.I18NBundle;
 import com.badlogic.gdx.utils.ObjectMap;
@@ -46,10 +47,12 @@ public class Assets {
     public final static String ACHIEVEMENTS = "achievements";
     public final static String LEADER_BOARDS = "leaderboards";
     public final static String RETRY = "retry";
+    public final static String RESUME = "resume";
     public final static String GAME_OVER = "game_over";
     public final static String DIALOG_LIGHTS_1 = "dialog_lights_1";
     public final static String DIALOG_LIGHTS_2 = "dialog_lights_2";
     public final static String OK = "ok";
+    public final static String CANCEL = "cancel";
     public final static String ABOUT = "about";
     public final static String ABOUT_TEXT_1 = "about_text_1";
     public final static String ABOUT_TEXT_2 = "about_text_2";
@@ -75,6 +78,7 @@ public class Assets {
     public static final String DIFFICULTY_BRUTAL = "diff_brutal";
     public static final String DIFFICULTY_VERY_HARD = "diff_very_hard";
     public static final String DIFFICULTY_HARD = "diff_hard";
+    public static final String DIFFICULTY_CUSTOM = "diff_custom";
     public static final String DIFFICULTY_BABY = "diff_baby";
     public static final String LIGHTS_ENABLED = "lights_on";
     public static final String LIGHTS_DISABLED = "lights_off";
@@ -84,6 +88,48 @@ public class Assets {
     public static final String RATE = "rate";
     public static final String RESET_TUTORIALS = "reset_tutorials";
     public static final String RESET_TUTORIALS_TOAST = "reset_tutorials_toast";
+    public static final String CUSTOM_DIFFICULTY = "custom_difficulty";
+    public static final String START_GAME = "start_game";
+    public static final String CUSTOM_BASE_SELECT = "custom_base_select";
+    public static final String RESET_DIFFICULTY = "reset_difficulty";
+
+    public static final String PICKUP_SETTINGS = "pickup_settings";
+    public static final String PICKUP_SPAWN_CHANCE = "pickup_spawn_chance";
+    public static final String PICKUP_SPAWN_DISTANCE = "pickup_spawn_distance";
+    public static final String PICKUP_LIVES_MIN = "pickup_lives_min";
+    public static final String PICKUP_LIVES_MAX = "pickup_lives_max";
+    public static final String PICKUP_SHIELDS_MIN = "pickup_shields_min";
+    public static final String PICKUP_SHIELDS_MAX = "pickup_shields_max";
+    public static final String PICKUP_BOOST_MIN = "pickup_boost_min";
+    public static final String PICKUP_BOOST_MAX = "pickup_boost_max";
+    public static final String PICKUP_TOXIC_MIN = "pickup_toxic_min";
+    public static final String PICKUP_TOXIC_MAX = "pickup_toxic_max";
+
+    public static final String OBSTACLE_SETTINGS = "obstacle_settings";
+    public static final String OBSTACLE_DISTANCE_MIN = "obstacle_distance_min";
+    public static final String OBSTACLE_DISTANCE_MAX = "obstacle_distance_max";
+    public static final String OBSTACLE_GAP_MIN = "obstacle_gap_min";
+    public static final String OBSTACLE_GAP_MAX = "obstacle_gap_max";
+
+    public static final String PLAYER_SETTINGS = "player_settings";
+    public static final String PLAYER_INIT_LIVES = "player_init_lives";
+    public static final String PLAYER_INIT_SHIELDS = "player_init_shields";
+    public static final String PLAYER_SCALE = "player_scale";
+    public static final String PLAYER_CENTRE_OFFSET = "player_centre_offset";
+    public static final String PLAYER_FLY_SPEED = "player_fly_speed";
+    public static final String PLAYER_FLY_MAX_SPEED = "player_fly_max_speed";
+    public static final String PLAYER_FLY_IMPULSE = "player_fly_impulse";
+    public static final String PLAYER_LINEAR_DAMPENING = "player_linear_dampening";
+    public static final String PLAYER_JUMP_IMPULSE = "player_jump_impulse";
+    public static final String PLAYER_JUMP_DELAY = "player_jump_delay";
+    public static final String PLAYER_DASH_TIME = "player_dash_time";
+    public static final String PLAYER_DASH_DELAY = "player_dash_delay";
+    public static final String PLAYER_DASH_IMPULSE = "player_dash_impulse";
+
+    public static final String WORLD_SETTINGS = "world_settings";
+    public static final String GRAVITY = "world_gravity";
+    public static final String CUSTOM_WARNING = "custom_warning";
+
 
     private final static String GAME_ATLAS = "data/pack/sfg.atlas";
     private final static String PARTICLE_ATLAS = "data/pack/sfg_particles.atlas";
@@ -102,12 +148,13 @@ public class Assets {
     private TextureAtlas gameAtlas;
     private TextureAtlas particleAtlas;
     private TextureAtlas uiAtlas;
+    private SkeletonJson json;
 
     public static enum Particles {
         EXPLOSION, BLOOD, TOXIC
     }
     public static enum Animations {
-        PLAYER, OBST_SPIKE, OBST_HAMMER, OBST_MOVING, PICKUP, TUT_JUMP, TUT_BOOST
+        PLAYER, OBST_SPIKE, OBST_HAMMER, OBST_MOVING, PICKUP, TUT_JUMP, TUT_BOOST, TUT_BREAKABLE, SHIELD_BREAK
     }
 
     private ObjectMap<Particles, ParticleEffectPool> particleEffects;
@@ -140,11 +187,14 @@ public class Assets {
 
         soundManager = new SoundManager(assetManager);
 	}
-	
+
+    private boolean loaded = false;
+
     public boolean update(){
         final boolean isDone = assetManager.update();
-        if (isDone){
+        if (isDone && !loaded){
             finishLoading();
+            loaded = true;
         }
         return isDone;
     }
@@ -180,20 +230,22 @@ public class Assets {
         skeletons = new ObjectMap<Animations, SkeletonData>();
         animationStates = new ObjectMap<Animations, AnimationStateData>();
 
-        final SkeletonJson json = new SkeletonJson(gameAtlas);
+        json = new SkeletonJson(gameAtlas);
         json.setScale(GameScreen.BOX2D_TO_PIXEL);
 
         final String[] animFiles = {
                 "data/anim/obst_spike.json",
                 "data/anim/obst_hammer.json",
                 "data/anim/obst_moving.json",
-                "data/anim/pickup.json"
+                "data/anim/pickup.json",
+                "data/anim/broken_shield.json"
         };
         final Animations[] animNames = {
                 Animations.OBST_SPIKE,
                 Animations.OBST_HAMMER,
                 Animations.OBST_MOVING,
-                Animations.PICKUP
+                Animations.PICKUP,
+                Animations.SHIELD_BREAK
         };
 
         for (int i = 0; i < animFiles.length; i++) {
@@ -202,10 +254,17 @@ public class Assets {
             skeletons.put(animNames[i], skeletonData);
             animationStates.put(animNames[i], animationData);
         }
+        initPlayerAnimations(1.5f);
+    }
+    // default
+    private float lastScale = -1;
 
-        // we are lazy, just make the player a bit bigger
-        // maybe we will fix it later
-        json.setScale(GameScreen.BOX2D_TO_PIXEL*1.5f);
+    public void initPlayerAnimations(float scale){
+        // dont reinit if same scale as last time
+        if (MathUtils.isEqual(lastScale, scale))
+            return;
+        lastScale = scale;
+        json.setScale(GameScreen.BOX2D_TO_PIXEL*scale);
         final SkeletonData playerSkeletonData = json.readSkeletonData(Gdx.files.internal("data/anim/player.json"));
         final AnimationStateData playerAnimationData = new AnimationStateData(playerSkeletonData);
         skeletons.put(Animations.PLAYER, playerSkeletonData);
@@ -218,11 +277,13 @@ public class Assets {
 
         final String[] animTutFiles = {
                 "data/anim/jump_tutorial.json",
-                "data/anim/boost_tutorial.json"
+                "data/anim/boost_tutorial.json",
+                "data/anim/breakable_tutorial.json"
         };
         final Animations[] animTutNames = {
                 Animations.TUT_JUMP,
-                Animations.TUT_BOOST
+                Animations.TUT_BOOST,
+                Animations.TUT_BREAKABLE
         };
 
         for (int i = 0; i < animTutFiles.length; i++) {

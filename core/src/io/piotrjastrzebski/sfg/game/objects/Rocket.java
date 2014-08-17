@@ -93,6 +93,7 @@ public class Rocket implements Poolable, FixedUpdatable, VariableUpdatable {
         isExploded = false;
         lastAngle = 180+15;
         transform.init(x, y, lastAngle);
+        fixedUpdate();
 	}
 
     @Override
@@ -101,7 +102,7 @@ public class Rocket implements Poolable, FixedUpdatable, VariableUpdatable {
             return;
         float angle = body.getLinearVelocity().nor().angle()-90;
         // ignore large spike after collision
-        if (Math.abs(lastAngle - angle) > 10f){
+        if (Math.abs(lastAngle - angle) > 5){
             angle = lastAngle;
         } else {
             lastAngle = angle;
