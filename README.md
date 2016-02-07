@@ -3,9 +3,9 @@ SFG is a action packed game designed for mobile devices. It was inspired by Flap
 
 You can get Android version on [Google Play](https://play.google.com/store/apps/details?id=io.piotrjastrzebski.sfg.android)
 
-Read more about it and play demo on [my site](http://www.piotrjastrzebski.io/sfg)
+Read more about it on [my site](http://piotrjastrzebski.io/project/super-flying-gentleman/)
 
-![Super Flying Gentlemen screen shot](http://www.piotrjastrzebski.io/static/img/sfg-github.jpg)
+![Super Flying Gentlemen screen shot](http://piotrjastrzebski.io/img/sfg1.png)
 
 ## Building and running the game
 ### Importing and running the project
